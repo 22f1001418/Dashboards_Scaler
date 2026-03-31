@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Role & Round Analysis — DSML Placement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:        #faf7f2;
+    --bg2:       #f5f0e8;
+    --bg3:       #ede6d8;
+    --surface:   #ffffff;
+    --border:    #e8dfd0;
+    --border2:   #d6cab5;
+    --text:      #2c2416;
+    --text2:     #5c4f3a;
+    --muted:     #9c8b72;
+    --dim:       #c4b49a;
+
+    --rust:      #c0622a;
+    --rust-lt:   #f0ddd0;
+    --amber:     #d4820a;
+    --amber-lt:  #faecd0;
+    --sage:      #4a7c59;
+    --sage-lt:   #d4e8db;
+    --clay:      #8b4a4a;
+    --clay-lt:   #f0d8d8;
+    --indigo:    #4a5fa8;
+    --indigo-lt: #d8deef;
+    --teal:      #2d7a7a;
+    --teal-lt:   #cce8e8;
+    --plum:      #7a4a8b;
+    --plum-lt:   #e8d8f0;
+    --bronze:    #8b6a2a;
+    --bronze-lt: #f0e4cc;
+    --moss:      #5a7a3a;
+    --moss-lt:   #dce8cc;
+    --brick:     #9a3a2a;
+    --terracotta:#c87941;
+
+    --font:  'DM Sans', sans-serif;
+    --serif: 'Lora', serif;
+    --mono:  'DM Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    padding: 36px 52px 28px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .header-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--rust);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 24px; height: 2px;
+    background: var(--rust);
+  }
+
+  .header h1 {
+    font-family: var(--serif);
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .header h1 em {
+    font-style: normal;
+    color: var(--rust);
+  }
+
+  .header-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 28px;
+    padding-bottom: 4px;
+  }
+
+  .hstat {
+    text-align: right;
+  }
+
+  .hstat-val {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--rust);
+    line-height: 1;
+  }
+
+  .hstat-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* ─── NAV TABS ─── */
+  .tab-nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 52px;
+    display: flex;
+    gap: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .nav-btn {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 16px 24px;
+    cursor: pointer;
+    transition: all 0.18s;
+    margin-bottom: -1px;
+    letter-spacing: 0.01em;
+  }
+
+  .nav-btn:hover { color: var(--text2); }
+
+  .nav-btn.active {
+    color: var(--rust);
+    border-bottom-color: var(--rust);
+    font-weight: 600;
+  }
+
+  .tab-section { display: none; }
+  .tab-section.active { display: block; }
+
+  /* ─── LAYOUT ─── */
+  .page-pad { padding: 36px 52px; }
+
+  .section-title {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+
+  .section-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+  .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+
+  .mt { margin-top: 24px; }
+  .mt2 { margin-top: 36px; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .card-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--rust);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card-tag::before {
+    content: '';
+    width: 16px; height: 1.5px;
+    background: var(--rust);
+    display: inline-block;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .card-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  /* ─── KPI STRIP ─── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .kpi-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+
+  .kpi-val {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+
+  .kpi-lbl {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ─── ROLE SELECTOR ─── */
+  .role-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .role-chip {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border2);
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .role-chip:hover {
+    border-color: var(--rust);
+    color: var(--rust);
+  }
+
+  .role-chip.active {
+    background: var(--rust);
+    border-color: var(--rust);
+    color: white;
+    box-shadow: 0 2px 8px rgba(192,98,42,0.25);
+  }
+
+  .role-chip .chip-count {
+    font-family: var(--mono);
+    font-size: 10px;
+    opacity: 0.75;
+  }
+
+  /* ─── HORIZONTAL BAR ROWS ─── */
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--bg2);
+  }
+
+  .bar-row:last-child { border-bottom: none; }
+
+  .bar-label {
+    font-size: 12px;
+    color: var(--text2);
+    width: 160px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--bg2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .bar-val {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text2);
+    width: 30px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ─── STACKED ROWS ─── */
+  .stack-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--bg2);
+  }
+
+  .stack-row:last-child { border-bottom: none; }
+
+  .stack-label {
+    font-size: 12px;
+    color: var(--text2);
+    width: 155px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stack-bar {
+    flex: 1;
+    height: 10px;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+  }
+
+  .stack-seg { height: 100%; transition: width 0.8s; }
+
+  .stack-total {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ─── PASS RATE TABLE ─── */
+  .pr-table { width: 100%; border-collapse: collapse; }
+
+  .pr-table th {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1.5px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .pr-table th:not(:first-child) { text-align: center; }
+
+  .pr-table td {
+    padding: 9px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--bg2);
+    vertical-align: middle;
+  }
+
+  .pr-table td:not(:first-child) {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .pr-table tbody tr:hover td { background: var(--bg2); }
+
+  .pass-cell { display: flex; align-items: center; gap: 8px; justify-content: center; }
+
+  .mini-track {
+    width: 52px; height: 5px;
+    background: var(--bg2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .mini-fill { height: 100%; border-radius: 2px; }
+
+  .rate-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+
+  .rate-tag.high  { background: var(--sage-lt);   color: var(--sage); }
+  .rate-tag.mid   { background: var(--amber-lt);  color: var(--amber); }
+  .rate-tag.low   { background: var(--clay-lt);   color: var(--clay); }
+  .rate-tag.zero  { background: var(--bg2);        color: var(--muted); }
+
+  /* ─── LEGEND ─── */
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .leg-dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ─── ROUND FUNNEL ─── */
+  .funnel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px 0;
+  }
+
+  .funnel-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .funnel-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  .funnel-track {
+    flex: 1;
+    height: 28px;
+    background: var(--bg2);
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+  }
+
+  .funnel-seg { height: 100%; display: flex; align-items: center; justify-content: center; }
+  .funnel-seg-text { font-size: 10px; font-weight: 600; color: rgba(0,0,0,0.5); white-space: nowrap; overflow: hidden; padding: 0 4px; }
+
+  .funnel-total {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ─── INSIGHT PILLS ─── */
+  .insights-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 28px;
+  }
+
+  .insight {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .insight::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 2px 0 0 2px;
+  }
+
+  .insight.rust::before  { background: var(--rust); }
+  .insight.sage::before  { background: var(--sage); }
+  .insight.amber::before { background: var(--amber); }
+  .insight.indigo::before { background: var(--indigo); }
+  .insight.clay::before  { background: var(--clay); }
+  .insight.teal::before  { background: var(--teal); }
+
+  .insight-icon { font-size: 18px; margin-bottom: 8px; }
+  .insight-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .insight-text  { font-size: 11px; color: var(--muted); line-height: 1.55; }
+
+  /* ─── DIVIDER ─── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+
+  /* ─── ROLE DETAIL PANEL ─── */
+  .role-detail { display: none; }
+  .role-detail.active { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  .detail-stat {
+    background: var(--bg2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .detail-stat-label { font-size: 12px; color: var(--muted); }
+  .detail-stat-val { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card { animation: fadeIn 0.4s ease both; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-eyebrow">Scaler Academy · DSML Placement Ops</div>
+    <h1>Role & Round <em>Analysis</em></h1>
+    <div class="header-sub">Question patterns, difficulty, question type & outcomes — by role and interview round</div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="hstat-val">727</div>
+      <div class="hstat-label">Total Questions</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val">12</div>
+      <div class="hstat-label">Roles Analysed</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val">5</div>
+      <div class="hstat-label">Round Types</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB NAV -->
+<div class="tab-nav">
+  <button class="nav-btn active" onclick="switchSection('role', this)">Role-Based Analysis</button>
+  <button class="nav-btn" onclick="switchSection('round', this)">Round-Wise Analysis</button>
+  <button class="nav-btn" onclick="switchSection('outcome', this)">Round Outcomes</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     SECTION 1 — ROLE BASED
+═════════════════════════════════════════ -->
+<div id="sec-role" class="tab-section active">
+<div class="page-pad">
+
+  <div class="section-title">Role-Based Question Analysis</div>
+  <div class="section-desc">How question difficulty, type, and outcomes vary across the 12 most-interviewed job roles. Use the chips below to spotlight a specific role.</div>
+
+  <!-- KPI row -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#fde8d8;">🤖</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--rust);">115</div>
+        <div class="kpi-lbl">AI Engineer — most interviewed</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#d8e8df;">🏆</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--sage);">50%</div>
+        <div class="kpi-lbl">AI Engineer pass rate</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#faecd0;">⚠️</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--amber);">0%</div>
+        <div class="kpi-lbl">AI Python Dev pass rate</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#dde0f0;">💻</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--indigo);">13%</div>
+        <div class="kpi-lbl">Avg coding question share</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Role chips -->
+  <div class="role-selector" id="roleChips"></div>
+
+  <!-- Charts row 1 -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-tag">Difficulty</div>
+      <div class="card-title">Easy / Medium / Hard per Role</div>
+      <div class="card-desc">Stacked breakdown — how hard do questions get for each role?</div>
+      <div id="roleDiffBars"></div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#4a7c59;"></div>Easy</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#d4820a;"></div>Medium</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#8b4a4a;"></div>Hard</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-tag">Question Type</div>
+      <div class="card-title">Coding / Conceptual / Scenario per Role</div>
+      <div class="card-desc">What kinds of questions dominate each role's interviews?</div>
+      <div id="roleQtypeBars"></div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#4a5fa8;"></div>Conceptual</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#c0622a;"></div>Coding</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#2d7a7a;"></div>Scenario</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row 2 -->
+  <div class="grid-1-2 mt">
+    <div class="card">
+      <div class="card-tag">Volume</div>
+      <div class="card-title">Questions per Role</div>
+      <div class="card-desc">Interview activity volume across roles</div>
+      <div id="roleVolBars"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-tag">Outcomes</div>
+      <div class="card-title">Pass Rate & Cleared / Offered / Rejected</div>
+      <div class="card-desc">Sorted by pass rate — green ≥ 50%, amber 25–50%, red &lt; 25%</div>
+      <table class="pr-table" id="roleOutcomeTable"></table>
+    </div>
+  </div>
+
+  <!-- Spotlight panel -->
+  <div class="mt2">
+    <div class="section-title" style="font-size:16px;">🔎 Role Spotlight</div>
+    <div class="section-desc">Click any chip above to spotlight a role — see its doughnut breakdown and top topics.</div>
+    <div class="grid-2 mt" id="spotlightPanel" style="display:none;">
+      <div class="card">
+        <div class="card-tag">Spotlight — Difficulty</div>
+        <div class="card-title" id="spot-title-diff">—</div>
+        <div style="height:200px; display:flex; align-items:center; justify-content:center;">
+          <canvas id="spotDiffChart" style="max-height:200px;"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-tag">Spotlight — Question Type</div>
+        <div class="card-title" id="spot-title-qtype">—</div>
+        <div style="height:200px; display:flex; align-items:center; justify-content:center;">
+          <canvas id="spotQtypeChart" style="max-height:200px;"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card mt" id="spotTopicsCard" style="display:none;">
+      <div class="card-tag">Top Sub-Topics</div>
+      <div class="card-title" id="spot-title-topics">—</div>
+      <div class="card-desc">Most-asked specific topics in this role's interviews</div>
+      <div id="spotTopicBars"></div>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="insights-row">
+    <div class="insight rust">
+      <div class="insight-icon">🤖</div>
+      <div class="insight-title">AI Engineer is the volume leader</div>
+      <div class="insight-text">115 questions, 12 companies — and the only role hitting 50% pass rate at scale. GenAI, Python, and LLM integration are its core themes.</div>
+    </div>
+    <div class="insight sage">
+      <div class="insight-icon">📊</div>
+      <div class="insight-title">Data Scientist is heavily conceptual</div>
+      <div class="insight-text">69 questions, ~80% conceptual. ML fundamentals, model evaluation, and statistics dominate. Lower coding pressure than DS Intern roles.</div>
+    </div>
+    <div class="insight amber">
+      <div class="insight-icon">💻</div>
+      <div class="insight-title">Data Engineer skews toward coding</div>
+      <div class="insight-text">67 questions with the highest coding share of any role — SQL queries, Python data manipulation, and pipeline scenarios.</div>
+    </div>
+    <div class="insight indigo">
+      <div class="insight-icon">🎓</div>
+      <div class="insight-title">Intern roles are Medium-Heavy</div>
+      <div class="insight-text">DS Intern, AI Intern, AI/ML Intern all show 60%+ Medium difficulty — companies test foundations but don't go easy.</div>
+    </div>
+    <div class="insight clay">
+      <div class="insight-icon">🚫</div>
+      <div class="insight-title">AI Python Dev — 0% pass rate</div>
+      <div class="insight-text">All 16 questions appear in rejected rounds. Role requires deep Python + LLM integration skills that are a current prep gap.</div>
+    </div>
+    <div class="insight teal">
+      <div class="insight-icon">🎯</div>
+      <div class="insight-title">AI Search Specialist is scenario-heavy</div>
+      <div class="insight-text">Higher than average scenario-based question share — requires applied reasoning on retrieval pipelines, RAG tuning, and search quality.</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SECTION 2 — ROUND WISE
+═════════════════════════════════════════ -->
+<div id="sec-round" class="tab-section">
+<div class="page-pad">
+
+  <div class="section-title">Round-Wise Question Analysis</div>
+  <div class="section-desc">How the nature of questions — difficulty, type, and focus — shifts depending on which interview round you're in.</div>
+
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#fde8d8;">🔧</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--rust);">558</div>
+        <div class="kpi-lbl">Technical round questions</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#dde0f0;">📝</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--indigo);">115</div>
+        <div class="kpi-lbl">Assessment questions</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#d8e8df;">🟢</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--sage);">79%</div>
+        <div class="kpi-lbl">Managerial pass rate</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#faecd0;">📋</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--amber);">24%</div>
+        <div class="kpi-lbl">Assessment pass rate — lowest</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Difficulty by round -->
+    <div class="card">
+      <div class="card-tag">Difficulty</div>
+      <div class="card-title">Easy / Medium / Hard per Round Type</div>
+      <div class="card-desc">Technical rounds carry the most Hard questions; Managerial and HR skew Easy/Medium</div>
+      <div id="roundDiffBars"></div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#4a7c59;"></div>Easy</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#d4820a;"></div>Medium</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#8b4a4a;"></div>Hard</div>
+      </div>
+    </div>
+
+    <!-- QType by round -->
+    <div class="card">
+      <div class="card-tag">Question Type</div>
+      <div class="card-title">Coding / Conceptual / Scenario per Round Type</div>
+      <div class="card-desc">Assessments are the most coding-intensive rounds; technical rounds mix all types</div>
+      <div id="roundQtypeBars"></div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#4a5fa8;"></div>Conceptual</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#c0622a;"></div>Coding</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#2d7a7a;"></div>Scenario</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Doughnut row -->
+  <div class="grid-3 mt">
+    <div class="card">
+      <div class="card-tag">Technical Round</div>
+      <div class="card-title">Difficulty Split</div>
+      <div style="height:180px; display:flex; align-items:center; justify-content:center;">
+        <canvas id="techDiffChart" style="max-height:170px;"></canvas>
+      </div>
+      <div class="legend" style="justify-content:center; margin-top:8px;">
+        <div class="leg-item"><div class="leg-dot" style="background:#4a7c59;"></div>Easy 172</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#d4820a;"></div>Med 321</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#8b4a4a;"></div>Hard 65</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-tag">Assessment Round</div>
+      <div class="card-title">Question Type Split</div>
+      <div style="height:180px; display:flex; align-items:center; justify-content:center;">
+        <canvas id="assessQtypeChart" style="max-height:170px;"></canvas>
+      </div>
+      <div class="legend" style="justify-content:center; margin-top:8px;" id="assessLeg"></div>
+    </div>
+    <div class="card">
+      <div class="card-tag">All Rounds</div>
+      <div class="card-title">Volume Distribution</div>
+      <div style="height:180px; display:flex; align-items:center; justify-content:center;">
+        <canvas id="roundVolChart" style="max-height:170px;"></canvas>
+      </div>
+      <div class="legend" style="justify-content:center; margin-top:8px;" id="roundVolLeg"></div>
+    </div>
+  </div>
+
+  <!-- What to expect per round -->
+  <div class="card mt2">
+    <div class="card-tag">Round Prep Guide</div>
+    <div class="card-title">What to Expect in Each Round</div>
+    <div class="card-desc">Difficulty and type distribution at a glance — absolute counts</div>
+    <div style="overflow-x:auto;">
+      <table class="pr-table" id="roundSummaryTable"></table>
+    </div>
+  </div>
+
+  <div class="insights-row">
+    <div class="insight rust">
+      <div class="insight-icon">🔧</div>
+      <div class="insight-title">Technical rounds are 77% of all questions</div>
+      <div class="insight-text">558 of 727 questions come from technical rounds. Medium difficulty dominates at 57%, but they still include 65 Hard questions.</div>
+    </div>
+    <div class="insight amber">
+      <div class="insight-icon">📝</div>
+      <div class="insight-title">Assessments are the hardest to clear</div>
+      <div class="insight-text">Only 24% pass rate. Predominantly coding tasks — SQL queries, Python problems, ML implementation — with time pressure.</div>
+    </div>
+    <div class="insight sage">
+      <div class="insight-icon">🤝</div>
+      <div class="insight-title">Managerial is the easiest to clear</div>
+      <div class="insight-text">77% pass rate. Questions are scenario-based and behavioral — focus is on communication and applied thinking, not technical depth.</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SECTION 3 — OUTCOMES
+═════════════════════════════════════════ -->
+<div id="sec-outcome" class="tab-section">
+<div class="page-pad">
+
+  <div class="section-title">Round Outcome Deep Dive</div>
+  <div class="section-desc">Rejection, cleared, and offered patterns — broken down by round type and round level (R1, R2, R3…)</div>
+
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#d8e8df;">✅</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--sage);">234</div>
+        <div class="kpi-lbl">Total Cleared</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#dde0f0;">🎉</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--indigo);">50</div>
+        <div class="kpi-lbl">Total Offered</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#f0d8d8;">❌</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--clay);">443</div>
+        <div class="kpi-lbl">Total Rejected</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#faecd0;">📈</div>
+      <div class="kpi-body">
+        <div class="kpi-val" style="color:var(--amber);">39%</div>
+        <div class="kpi-lbl">Overall pass rate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Outcome by round type -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-tag">By Round Type</div>
+      <div class="card-title">Cleared / Offered / Rejected — Funnel</div>
+      <div class="card-desc">Each bar shows the outcome split for that round type</div>
+      <div class="funnel" id="roundOutcomeFunnel"></div>
+      <div class="legend mt">
+        <div class="leg-item"><div class="leg-dot" style="background:#4a7c59;"></div>Cleared</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#4a5fa8;"></div>Offered</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#8b4a4a;"></div>Rejected</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-tag">Pass Rate by Round Type</div>
+      <div class="card-title">Which rounds are easier to clear?</div>
+      <div class="card-desc">Pass rate = (Cleared + Offered) / Total questions in that round type</div>
+      <div style="height:260px; position:relative;">
+        <canvas id="roundPassRateChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Round level (R1, R2, R3) -->
+  <div class="grid-2 mt">
+    <div class="card">
+      <div class="card-tag">By Round Level</div>
+      <div class="card-title">R1 / R2 / R3 — Outcome Funnel</div>
+      <div class="card-desc">Does the pass rate improve or drop as rounds progress?</div>
+      <div class="funnel" id="levelOutcomeFunnel"></div>
+      <div class="legend mt">
+        <div class="leg-item"><div class="leg-dot" style="background:#4a7c59;"></div>Cleared</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#4a5fa8;"></div>Offered</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#8b4a4a;"></div>Rejected</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-tag">Round Level Pass Rate</div>
+      <div class="card-title">Does it get harder as rounds progress?</div>
+      <div class="card-desc">Pass rate increases in later rounds — only stronger candidates reach R2/R3</div>
+      <div style="height:260px; position:relative;">
+        <canvas id="levelPassRateChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Outcome table -->
+  <div class="card mt2">
+    <div class="card-tag">Full Outcome Table</div>
+    <div class="card-title">Round Type × Outcome — Complete Breakdown</div>
+    <div class="card-desc">All metrics in one place — note that pass rate rises sharply for Managerial and later-level rounds</div>
+    <table class="pr-table" id="outcomeFullTable"></table>
+  </div>
+
+  <!-- Round level stacked chart -->
+  <div class="card mt">
+    <div class="card-tag">Visual</div>
+    <div class="card-title">Round Level Outcome — Stacked Bar</div>
+    <div class="card-desc">Absolute counts of Cleared, Offered, and Rejected at each round level</div>
+    <div style="height:280px; position:relative;">
+      <canvas id="levelStackedChart"></canvas>
+    </div>
+  </div>
+
+  <div class="insights-row">
+    <div class="insight sage">
+      <div class="insight-icon">📈</div>
+      <div class="insight-title">Pass rate grows with round level</div>
+      <div class="insight-text">R1: 36% → R2: 49% → R3: 33% (small n). Later rounds see higher Offered rates — companies are more committed by R2.</div>
+    </div>
+    <div class="insight rust">
+      <div class="insight-icon">🚧</div>
+      <div class="insight-title">R1 is the biggest filter</div>
+      <div class="insight-text">431 questions in R1, with 280 rejections (65%). Most eliminations happen here — first-round prep is critical.</div>
+    </div>
+    <div class="insight amber">
+      <div class="insight-icon">📝</div>
+      <div class="insight-title">Assessments have the worst pass rate</div>
+      <div class="insight-text">Only 24% pass rate across 115 questions. Candidates who struggle to code under time pressure fail here disproportionately.</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+
+<script>
+// ══════════════ DATA ══════════════
+const D = {
+  top_roles: ['AI Engineer','Data Scientist','Data Engineer','Data Science Intern','AI/ML Intern','DS Intern','Data Support Engineer','AI Intern','Data Scientist - Contractual','Python -  Data Scientist','AI Search Specialist','AI Python Developer'],
+  role_counts: {'AI Engineer':115,'Data Scientist':69,'Data Engineer':67,'Data Science Intern':62,'AI/ML Intern':28,'DS Intern':23,'Data Support Engineer':21,'AI Intern':19,'Data Scientist - Contractual':18,'Python -  Data Scientist':18,'AI Search Specialist':17,'AI Python Developer':16},
+  role_diff: {'AI Engineer':{'Easy':35,'Medium':64,'Hard':16},'Data Scientist':{'Easy':26,'Medium':34,'Hard':9},'Data Engineer':{'Easy':15,'Medium':43,'Hard':9},'Data Science Intern':{'Easy':20,'Medium':33,'Hard':9},'AI/ML Intern':{'Easy':10,'Medium':15,'Hard':3},'DS Intern':{'Easy':10,'Medium':12,'Hard':1},'Data Support Engineer':{'Easy':6,'Medium':14,'Hard':1},'AI Intern':{'Easy':5,'Medium':12,'Hard':2},'Data Scientist - Contractual':{'Easy':5,'Medium':11,'Hard':2},'Python -  Data Scientist':{'Easy':3,'Medium':13,'Hard':2},'AI Search Specialist':{'Easy':3,'Medium':12,'Hard':2},'AI Python Developer':{'Easy':2,'Medium':11,'Hard':3}},
+  role_qtype: {'AI Engineer':{'Conceptual':96,'Coding':13,'Scenario-Based':6},'Data Scientist':{'Conceptual':57,'Coding':8,'Scenario-Based':4},'Data Engineer':{'Conceptual':47,'Coding':18,'Scenario-Based':2},'Data Science Intern':{'Conceptual':47,'Coding':11,'Scenario-Based':4},'AI/ML Intern':{'Conceptual':23,'Coding':3,'Scenario-Based':2},'DS Intern':{'Conceptual':19,'Coding':3,'Scenario-Based':1},'Data Support Engineer':{'Conceptual':18,'Coding':2,'Scenario-Based':1},'AI Intern':{'Conceptual':15,'Coding':3,'Scenario-Based':1},'Data Scientist - Contractual':{'Conceptual':14,'Coding':3,'Scenario-Based':1},'Python -  Data Scientist':{'Conceptual':12,'Coding':5,'Scenario-Based':1},'AI Search Specialist':{'Conceptual':12,'Coding':2,'Scenario-Based':3},'AI Python Developer':{'Conceptual':12,'Coding':2,'Scenario-Based':2}},
+  role_status: {'AI Engineer':{'Cleared':48,'Offered':10,'Rejected':57,'Total':115,'PassRate':50},'Data Scientist':{'Cleared':30,'Offered':4,'Rejected':35,'Total':69,'PassRate':49},'Data Engineer':{'Cleared':21,'Offered':5,'Rejected':41,'Total':67,'PassRate':38},'Data Science Intern':{'Cleared':25,'Offered':6,'Rejected':31,'Total':62,'PassRate':50},'AI/ML Intern':{'Cleared':7,'Offered':2,'Rejected':19,'Total':28,'PassRate':32},'DS Intern':{'Cleared':5,'Offered':2,'Rejected':16,'Total':23,'PassRate':30},'Data Support Engineer':{'Cleared':5,'Offered':0,'Rejected':16,'Total':21,'PassRate':24},'AI Intern':{'Cleared':5,'Offered':0,'Rejected':14,'Total':19,'PassRate':26},'Data Scientist - Contractual':{'Cleared':6,'Offered':1,'Rejected':11,'Total':18,'PassRate':38},'Python -  Data Scientist':{'Cleared':5,'Offered':1,'Rejected':12,'Total':18,'PassRate':33},'AI Search Specialist':{'Cleared':6,'Offered':2,'Rejected':9,'Total':17,'PassRate':47},'AI Python Developer':{'Cleared':0,'Offered':0,'Rejected':16,'Total':16,'PassRate':0}},
+  role_topics: {'AI Engineer':{'RAG':42,'LLM':18,'Agentic AI':10,'Fine Tuning LLMs':8},'Data Scientist':{'Personal projects':18,'Model Evaluation':10,'Linear Regression':8,'Pandas':7},'Data Engineer':{'Data Warehousing':20,'Pandas':12,'SQL':10,'ETL Tools':5},'Data Science Intern':{'Personal projects':15,'Pandas':12,'Supervised Learning':8,'EDA':7},'AI/ML Intern':{'RAG':10,'Pandas':6,'Supervised Learning':5,'LLM':4},'DS Intern':{'Pandas':7,'Personal projects':5,'Strings':4,'Joins':3},'Data Support Engineer':{'Strings':5,'Pandas':4,'Joins':3,'Aggregate Functions':3},'AI Intern':{'RAG':6,'LLM':4,'Agentic AI':3,'Fine Tuning LLMs':3},'Data Scientist - Contractual':{'Personal projects':6,'Model Evaluation':4,'EDA':3,'Pandas':3},'Python -  Data Scientist':{'Strings':4,'Pandas':4,'OOPS':3,'Supervised Learning':3},'AI Search Specialist':{'RAG':7,'LLM':4,'NLP Pipeline':3,'Vectorization Techniques':2},'AI Python Developer':{'RAG':5,'LLM':3,'Pandas':3,'Strings':2}},
+  round_diff: {'Assessment':{'Easy':22,'Medium':78,'Hard':15},'HR':{'Easy':1,'Medium':11,'Hard':0},'Managerial':{'Easy':1,'Medium':8,'Hard':0},'Screening':{'Easy':7,'Medium':21,'Hard':5},'Technical':{'Easy':172,'Medium':321,'Hard':65}},
+  round_qtype: {'Assessment':{'Conceptual':60,'Coding':42,'Scenario-Based':13},'HR':{'Conceptual':11,'Coding':0,'Scenario-Based':1},'Managerial':{'Conceptual':7,'Coding':0,'Scenario-Based':2},'Screening':{'Conceptual':26,'Coding':4,'Scenario-Based':3},'Technical':{'Conceptual':470,'Coding':51,'Scenario-Based':37}},
+  round_status: {'Assessment':{'Cleared':26,'Offered':2,'Rejected':87,'Total':115,'PassRate':24},'HR':{'Cleared':3,'Offered':0,'Rejected':9,'Total':12,'PassRate':25},'Managerial':{'Cleared':7,'Offered':0,'Rejected':2,'Total':9,'PassRate':77},'Screening':{'Cleared':12,'Offered':0,'Rejected':21,'Total':33,'PassRate':36},'Technical':{'Cleared':186,'Offered':48,'Rejected':324,'Total':558,'PassRate':41}},
+  round_level_status: {'Round 1':{'Cleared':140,'Offered':11,'Rejected':280},'Round 2':{'Cleared':77,'Offered':35,'Rejected':130},'Round 3':{'Cleared':13,'Offered':3,'Rejected':33},'Round 4+':{'Cleared':3,'Offered':0,'Rejected':0}},
+};
+
+// ══════════════ COLORS ══════════════
+const C = {
+  easy: '#4a7c59', medium: '#d4820a', hard: '#8b4a4a',
+  concept: '#4a5fa8', coding: '#c0622a', scenario: '#2d7a7a',
+  cleared: '#4a7c59', offered: '#4a5fa8', rejected: '#8b4a4a',
+  rust: '#c0622a', amber: '#d4820a', sage: '#4a7c59',
+  roleColors: ['#c0622a','#d4820a','#4a7c59','#4a5fa8','#8b4a4a','#2d7a7a','#7a4a8b','#8b6a2a','#5a7a3a','#9a3a2a','#c87941','#3a5a8b']
+};
+
+// ══════════════ UTILS ══════════════
+function hexAlpha(hex, a) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function buildStackedBars(container, data, labels, colors, order) {
+  container.innerHTML = '';
+  labels.forEach(label => {
+    const row = data[label];
+    if (!row) return;
+    const total = order.reduce((s,k) => s+(row[k]||0), 0);
+    if (!total) return;
+    const el = document.createElement('div');
+    el.className = 'stack-row';
+    const segs = order.map((k,i) => {
+      const pct = ((row[k]||0)/total*100).toFixed(1);
+      return `<div class="stack-seg" style="width:${pct}%;background:${colors[i]};opacity:0.85;" title="${k}: ${row[k]||0}"></div>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="stack-label" title="${label}">${label}</div>
+      <div class="stack-bar">${segs}</div>
+      <div class="stack-total">${total}</div>`;
+    container.appendChild(el);
+  });
+}
+
+function buildBarRows(container, data, color) {
+  container.innerHTML = '';
+  const max = Math.max(...Object.values(data));
+  Object.entries(data).sort((a,b)=>b[1]-a[1]).forEach(([label, val], i) => {
+    const pct = (val/max*100).toFixed(1);
+    const c = Array.isArray(color) ? color[i % color.length] : color;
+    const el = document.createElement('div');
+    el.className = 'bar-row';
+    el.innerHTML = `
+      <div class="bar-label" title="${label}">${label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:${c}" data-w="${pct}%"></div></div>
+      <div class="bar-val">${val}</div>`;
+    container.appendChild(el);
+  });
+  setTimeout(() => {
+    container.querySelectorAll('.bar-fill').forEach(el => el.style.width = el.dataset.w);
+  }, 80);
+}
+
+function doughnut(id, labels, data, colors) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (ctx._chart) ctx._chart.destroy();
+  const chart = new Chart(ctx.getContext('2d'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#2c2416', titleColor: '#faf7f2', bodyColor: '#9c8b72',
+                   callbacks: { label: c => ` ${c.raw} (${(c.raw/data.reduce((a,b)=>a+b)*100).toFixed(0)}%)` } }
+      }
+    }
+  });
+  ctx._chart = chart;
+}
+
+// ══════════════ SECTION SWITCH ══════════════
+function switchSection(id, btn) {
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+}
+
+// ══════════════ ROLE SECTION ══════════════
+let spotDiffChart, spotQtypeChart;
+
+function buildRoleSection() {
+  const roles = D.top_roles;
+
+  // Role chips
+  const chips = document.getElementById('roleChips');
+  chips.innerHTML = '<span style="font-size:12px;color:var(--muted);align-self:center;margin-right:4px;">Filter:</span>';
+  roles.forEach((role, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'role-chip';
+    chip.dataset.role = role;
+    chip.innerHTML = `${role} <span class="chip-count">${D.role_counts[role]}</span>`;
+    chip.onclick = () => spotlightRole(role, chip);
+    chips.appendChild(chip);
+  });
+
+  // Diff stacked bars
+  buildStackedBars(
+    document.getElementById('roleDiffBars'),
+    D.role_diff, roles,
+    [C.easy, C.medium, C.hard], ['Easy','Medium','Hard']
+  );
+
+  // QType stacked bars
+  buildStackedBars(
+    document.getElementById('roleQtypeBars'),
+    D.role_qtype, roles,
+    [C.concept, C.coding, C.scenario], ['Conceptual','Coding','Scenario-Based']
+  );
+
+  // Volume bars
+  buildBarRows(
+    document.getElementById('roleVolBars'),
+    D.role_counts, C.roleColors
+  );
+
+  // Outcome table
+  buildRoleOutcomeTable();
+}
+
+function buildRoleOutcomeTable() {
+  const tbl = document.getElementById('roleOutcomeTable');
+  const roles = [...D.top_roles].sort((a,b) => D.role_status[b].PassRate - D.role_status[a].PassRate);
+  tbl.innerHTML = `<thead><tr>
+    <th>Role</th><th>Total</th><th>Cleared</th><th>Offered</th><th>Rejected</th><th>Pass Rate</th>
+  </tr></thead><tbody>` + roles.map((role, i) => {
+    const s = D.role_status[role];
+    const pr = s.PassRate;
+    const tag = pr >= 50 ? 'high' : pr >= 25 ? 'mid' : pr > 0 ? 'low' : 'zero';
+    return `<tr>
+      <td style="font-weight:500;font-size:12px;">${role}</td>
+      <td>${s.Total}</td>
+      <td style="color:${C.sage}">${s.Cleared}</td>
+      <td style="color:${C.concept}">${s.Offered}</td>
+      <td style="color:${C.hard}">${s.Rejected}</td>
+      <td><div class="pass-cell">
+        <div class="mini-track"><div class="mini-fill" style="width:${pr}%;background:${pr>=50?C.sage:pr>=25?C.medium:C.hard};"></div></div>
+        <span class="rate-tag ${tag}">${pr}%</span>
+      </div></td>
+    </tr>`;
+  }).join('') + '</tbody>';
+}
+
+function spotlightRole(role, chipEl) {
+  document.querySelectorAll('.role-chip').forEach(c=>c.classList.remove('active'));
+  chipEl.classList.add('active');
+
+  const panel = document.getElementById('spotlightPanel');
+  const topCard = document.getElementById('spotTopicsCard');
+  panel.style.display = 'grid';
+  topCard.style.display = 'block';
+
+  // Diff doughnut
+  document.getElementById('spot-title-diff').textContent = `${role} — Difficulty`;
+  const d = D.role_diff[role];
+  if (spotDiffChart) spotDiffChart.destroy();
+  const ctx1 = document.getElementById('spotDiffChart').getContext('2d');
+  spotDiffChart = new Chart(ctx1, {
+    type: 'doughnut',
+    data: { labels:['Easy','Medium','Hard'], datasets:[{data:[d.Easy,d.Medium,d.Hard],backgroundColor:[C.easy,C.medium,C.hard],borderWidth:2,borderColor:'#fff'}] },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'58%',
+      plugins: { legend:{ position:'bottom', labels:{ color:'#5c4f3a', font:{size:11} } },
+        tooltip:{ backgroundColor:'#2c2416', titleColor:'#faf7f2', bodyColor:'#9c8b72' } } }
+  });
+
+  // QType doughnut
+  document.getElementById('spot-title-qtype').textContent = `${role} — Question Type`;
+  const q = D.role_qtype[role];
+  if (spotQtypeChart) spotQtypeChart.destroy();
+  const ctx2 = document.getElementById('spotQtypeChart').getContext('2d');
+  spotQtypeChart = new Chart(ctx2, {
+    type: 'doughnut',
+    data: { labels:['Conceptual','Coding','Scenario-Based'], datasets:[{data:[q.Conceptual||0,q.Coding||0,q['Scenario-Based']||0],backgroundColor:[C.concept,C.coding,C.scenario],borderWidth:2,borderColor:'#fff'}] },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'58%',
+      plugins: { legend:{ position:'bottom', labels:{ color:'#5c4f3a', font:{size:11} } },
+        tooltip:{ backgroundColor:'#2c2416', titleColor:'#faf7f2', bodyColor:'#9c8b72' } } }
+  });
+
+  // Topics
+  document.getElementById('spot-title-topics').textContent = `${role} — Top Sub-Topics`;
+  const topics = D.role_topics[role] || {};
+  buildBarRows(document.getElementById('spotTopicBars'), topics, C.roleColors);
+
+  // Scroll to panel
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ══════════════ ROUND SECTION ══════════════
+function buildRoundSection() {
+  const rounds = ['Technical','Assessment','Screening','HR','Managerial'];
+
+  buildStackedBars(
+    document.getElementById('roundDiffBars'),
+    D.round_diff, rounds,
+    [C.easy, C.medium, C.hard], ['Easy','Medium','Hard']
+  );
+
+  buildStackedBars(
+    document.getElementById('roundQtypeBars'),
+    D.round_qtype, rounds,
+    [C.concept, C.coding, C.scenario], ['Conceptual','Coding','Scenario-Based']
+  );
+
+  // Tech diff doughnut
+  doughnut('techDiffChart', ['Easy','Medium','Hard'], [172,321,65], [C.easy,C.medium,C.hard]);
+
+  // Assessment qtype doughnut
+  const aq = D.round_qtype['Assessment'];
+  doughnut('assessQtypeChart',
+    ['Conceptual','Coding','Scenario-Based'],
+    [aq.Conceptual, aq.Coding, aq['Scenario-Based']],
+    [C.concept, C.coding, C.scenario]
+  );
+  const al = document.getElementById('assessLeg');
+  [['Conceptual',aq.Conceptual,C.concept],['Coding',aq.Coding,C.coding],['Scenario',aq['Scenario-Based'],C.scenario]].forEach(([l,v,c]) => {
+    const d = document.createElement('div'); d.className='leg-item';
+    d.innerHTML=`<div class="leg-dot" style="background:${c};"></div>${l} ${v}`; al.appendChild(d);
+  });
+
+  // Volume doughnut
+  const roundVols = rounds.map(r => Object.values(D.round_status[r]).slice(0,3).reduce((a,b)=>a+b,0));
+  const rvColors = [C.rust, C.concept, C.scenario, C.sage, C.medium];
+  doughnut('roundVolChart', rounds, roundVols, rvColors);
+  const rl = document.getElementById('roundVolLeg');
+  rounds.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='leg-item';
+    d.innerHTML=`<div class="leg-dot" style="background:${rvColors[i]};"></div>${r}`;rl.appendChild(d);
+  });
+
+  // Summary table
+  const tbl = document.getElementById('roundSummaryTable');
+  tbl.innerHTML = `<thead><tr>
+    <th>Round</th><th>Total</th><th>Easy</th><th>Medium</th><th>Hard</th>
+    <th>Conceptual</th><th>Coding</th><th>Scenario</th>
+  </tr></thead><tbody>` + rounds.map(r => {
+    const di = D.round_diff[r]||{};
+    const qt = D.round_qtype[r]||{};
+    const total = (di.Easy||0)+(di.Medium||0)+(di.Hard||0);
+    return `<tr>
+      <td style="font-weight:600;font-size:12px;">${r}</td>
+      <td style="font-family:var(--mono);font-weight:700;">${total}</td>
+      <td style="color:${C.easy};">${di.Easy||0}</td>
+      <td style="color:${C.medium};">${di.Medium||0}</td>
+      <td style="color:${C.hard};">${di.Hard||0}</td>
+      <td style="color:${C.concept};">${qt.Conceptual||0}</td>
+      <td style="color:${C.coding};">${qt.Coding||0}</td>
+      <td style="color:${C.scenario};">${qt['Scenario-Based']||0}</td>
+    </tr>`;
+  }).join('') + '</tbody>';
+}
+
+// ══════════════ OUTCOME SECTION ══════════════
+function buildOutcomeSection() {
+  // Round type funnel
+  const funnelEl = document.getElementById('roundOutcomeFunnel');
+  const roundOrder = Object.entries(D.round_status).sort((a,b)=>b[1].Total-a[1].Total);
+  roundOrder.forEach(([rnd, s]) => {
+    const total = s.Total;
+    const cPct = (s.Cleared/total*100).toFixed(1);
+    const oPct = (s.Offered/total*100).toFixed(1);
+    const rPct = (s.Rejected/total*100).toFixed(1);
+    const step = document.createElement('div');
+    step.className = 'funnel-step';
+    step.innerHTML = `
+      <div class="funnel-label">${rnd}</div>
+      <div class="funnel-track">
+        <div class="funnel-seg" style="width:${cPct}%;background:${hexAlpha(C.cleared,0.75)};">
+          <div class="funnel-seg-text">${s.Cleared}</div></div>
+        <div class="funnel-seg" style="width:${oPct}%;background:${hexAlpha(C.offered,0.75)};">
+          <div class="funnel-seg-text">${s.Offered}</div></div>
+        <div class="funnel-seg" style="width:${rPct}%;background:${hexAlpha(C.rejected,0.7)};">
+          <div class="funnel-seg-text">${s.Rejected}</div></div>
+      </div>
+      <div class="funnel-total">${total}</div>`;
+    funnelEl.appendChild(step);
+  });
+
+  // Round level funnel
+  const levelEl = document.getElementById('levelOutcomeFunnel');
+  const levelOrder = ['Round 1','Round 2','Round 3','Round 4+'];
+  levelOrder.forEach(lv => {
+    const s = D.round_level_status[lv];
+    if (!s) return;
+    const total = s.Cleared+s.Offered+s.Rejected;
+    const cPct = (s.Cleared/total*100).toFixed(1);
+    const oPct = (s.Offered/total*100).toFixed(1);
+    const rPct = (s.Rejected/total*100).toFixed(1);
+    const step = document.createElement('div');
+    step.className = 'funnel-step';
+    step.innerHTML = `
+      <div class="funnel-label">${lv}</div>
+      <div class="funnel-track">
+        <div class="funnel-seg" style="width:${cPct}%;background:${hexAlpha(C.cleared,0.75)};">
+          <div class="funnel-seg-text">${s.Cleared}</div></div>
+        <div class="funnel-seg" style="width:${oPct}%;background:${hexAlpha(C.offered,0.75)};">
+          <div class="funnel-seg-text">${s.Offered}</div></div>
+        <div class="funnel-seg" style="width:${rPct}%;background:${hexAlpha(C.rejected,0.7)};">
+          <div class="funnel-seg-text">${s.Rejected}</div></div>
+      </div>
+      <div class="funnel-total">${total}</div>`;
+    levelEl.appendChild(step);
+  });
+
+  // Pass rate bar chart — round types
+  const roundPassCtx = document.getElementById('roundPassRateChart').getContext('2d');
+  const rpLabels = roundOrder.map(r=>r[0]);
+  const rpVals   = roundOrder.map(r=>r[1].PassRate);
+  const rpColors = rpVals.map(v => v>=50?C.sage:v>=30?C.medium:C.hard);
+  new Chart(roundPassCtx, {
+    type: 'bar',
+    data: { labels: rpLabels, datasets: [{
+      data: rpVals, backgroundColor: rpColors, borderRadius: 6,
+      borderSkipped: false
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor:'#2c2416', titleColor:'#faf7f2', bodyColor:'#9c8b72',
+                   callbacks: { label: c => ` ${c.raw}% pass rate` } }
+      },
+      scales: {
+        x: { grid:{ display:false }, ticks:{ color:'#9c8b72', font:{size:11} } },
+        y: { grid:{ color:'#ede6d8' }, ticks:{ color:'#9c8b72', font:{size:10} }, max:100,
+             title:{ display:true, text:'Pass Rate (%)', color:'#9c8b72', font:{size:10} } }
+      }
+    }
+  });
+
+  // Pass rate bar — round levels
+  const lvPassCtx = document.getElementById('levelPassRateChart').getContext('2d');
+  const lvLabels = levelOrder.filter(l=>D.round_level_status[l]);
+  const lvVals = lvLabels.map(l => {
+    const s=D.round_level_status[l];
+    const total=s.Cleared+s.Offered+s.Rejected;
+    return +((s.Cleared+s.Offered)/total*100).toFixed(1);
+  });
+  const lvColors = lvVals.map(v=>v>=50?C.sage:v>=30?C.medium:C.hard);
+  new Chart(lvPassCtx, {
+    type: 'bar',
+    data: { labels: lvLabels, datasets:[{
+      data: lvVals, backgroundColor: lvColors, borderRadius: 6, borderSkipped: false
+    }]},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'#2c2416', titleColor:'#faf7f2', bodyColor:'#9c8b72',
+                  callbacks:{ label: c=>`  ${c.raw}% pass rate` }}
+      },
+      scales: {
+        x:{ grid:{display:false}, ticks:{color:'#9c8b72',font:{size:11}} },
+        y:{ grid:{color:'#ede6d8'}, ticks:{color:'#9c8b72',font:{size:10}}, max:100,
+            title:{display:true,text:'Pass Rate (%)',color:'#9c8b72',font:{size:10}} }
+      }
+    }
+  });
+
+  // Full outcome table
+  const fullTbl = document.getElementById('outcomeFullTable');
+  fullTbl.innerHTML = `<thead><tr>
+    <th>Round</th><th>Total</th><th>Cleared</th><th>Offered</th><th>Rejected</th><th>Pass Rate</th>
+  </tr></thead><tbody>` + roundOrder.map(([rnd,s]) => {
+    const pr = s.PassRate;
+    const tag = pr>=50?'high':pr>=30?'mid':pr>0?'low':'zero';
+    return `<tr>
+      <td style="font-weight:600;font-size:13px;">${rnd}</td>
+      <td style="font-family:var(--mono);font-weight:700;">${s.Total}</td>
+      <td style="color:${C.sage};">${s.Cleared}</td>
+      <td style="color:${C.concept};">${s.Offered}</td>
+      <td style="color:${C.hard};">${s.Rejected}</td>
+      <td><div class="pass-cell">
+        <div class="mini-track"><div class="mini-fill" style="width:${pr}%;background:${pr>=50?C.sage:pr>=30?C.medium:C.hard};"></div></div>
+        <span class="rate-tag ${tag}">${pr}%</span>
+      </div></td>
+    </tr>`;
+  }).join('') + '</tbody>';
+
+  // Level stacked chart
+  const lvStackCtx = document.getElementById('levelStackedChart').getContext('2d');
+  const validLevels = levelOrder.filter(l=>D.round_level_status[l]);
+  const clData = validLevels.map(l=>D.round_level_status[l].Cleared);
+  const ofData = validLevels.map(l=>D.round_level_status[l].Offered);
+  const rjData = validLevels.map(l=>D.round_level_status[l].Rejected);
+  new Chart(lvStackCtx, {
+    type:'bar',
+    data:{ labels:validLevels, datasets:[
+      { label:'Cleared', data:clData, backgroundColor:hexAlpha(C.cleared,0.8), borderRadius:4, stack:'s' },
+      { label:'Offered', data:ofData, backgroundColor:hexAlpha(C.offered,0.8), borderRadius:4, stack:'s' },
+      { label:'Rejected',data:rjData, backgroundColor:hexAlpha(C.rejected,0.7), borderRadius:4, stack:'s' },
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ labels:{ color:'#5c4f3a', font:{size:12}, boxWidth:12 } },
+        tooltip:{ backgroundColor:'#2c2416', titleColor:'#faf7f2', bodyColor:'#9c8b72' }
+      },
+      scales:{
+        x:{ stacked:true, grid:{display:false}, ticks:{color:'#9c8b72',font:{size:12}} },
+        y:{ stacked:true, grid:{color:'#ede6d8'}, ticks:{color:'#9c8b72',font:{size:10}} }
+      }
+    }
+  });
+}
+
+// ══════════════ INIT ══════════════
+buildRoleSection();
+buildRoundSection();
+buildOutcomeSection();
+</script>
+</body>
+</html>

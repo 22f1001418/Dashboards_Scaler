@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learner Journey — Offered vs Cleared vs Rejected</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:       #0e1a14;
+  --bg2:      #142019;
+  --bg3:      #1a2b1f;
+  --surface:  #1f3328;
+  --surface2: #243d2f;
+  --border:   #2d5038;
+  --border2:  #3a6347;
+
+  --text:     #e8f0ea;
+  --text2:    #b8ccbc;
+  --muted:    #7a9c82;
+  --dim:      #4a6a52;
+
+  --green:    #5db87a;
+  --green-lt: rgba(93,184,122,0.12);
+  --gold:     #c9a84c;
+  --gold-lt:  rgba(201,168,76,0.12);
+  --rose:     #e07070;
+  --rose-lt:  rgba(224,112,112,0.10);
+  --sky:      #6ab4d4;
+  --sky-lt:   rgba(106,180,212,0.10);
+  --sage:     #8ec49a;
+  --cream:    #d4c9a8;
+
+  --font:     'IBM Plex Sans', sans-serif;
+  --serif:    'Playfair Display', serif;
+  --mono:     'IBM Plex Mono', monospace;
+
+  --offered-c:  #5db87a;
+  --cleared-c:  #c9a84c;
+  --rejected-c: #e07070;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* grain overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.4;
+}
+
+/* ── HEADER ── */
+.header {
+  padding: 48px 56px 36px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 40px;
+  background: linear-gradient(180deg, rgba(93,184,122,0.04) 0%, transparent 100%);
+}
+
+.header-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-eyebrow::before {
+  content: '';
+  width: 28px; height: 1px;
+  background: var(--green);
+}
+
+.header h1 {
+  font-family: var(--serif);
+  font-size: 42px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.header h1 em {
+  font-style: italic;
+  color: var(--green);
+}
+
+.header-sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 8px;
+  font-weight: 300;
+  letter-spacing: 0.01em;
+}
+
+.header-kpis {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.hkpi {
+  padding: 20px 28px;
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+
+.hkpi:last-child { border-right: none; }
+
+.hkpi-val {
+  font-family: var(--mono);
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.hkpi-lbl {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+/* ── NAV ── */
+.nav {
+  display: flex;
+  gap: 0;
+  padding: 0 56px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 18px 24px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.18s;
+}
+
+.nav-btn:hover { color: var(--text2); }
+.nav-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+.tab-section { display: none; }
+.tab-section.active { display: block; }
+
+/* ── LAYOUT ── */
+.page { padding: 44px 56px 72px; }
+
+.sec-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sec-label::before {
+  content: '';
+  width: 18px; height: 1px;
+  background: var(--green);
+}
+
+.sec-title {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.sec-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 32px;
+  font-weight: 300;
+  max-width: 680px;
+  line-height: 1.6;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+.grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+.mt { margin-top: 24px; }
+.mt2 { margin-top: 44px; }
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px 26px;
+  transition: border-color 0.2s;
+}
+
+.card:hover { border-color: var(--border2); }
+
+.card-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 6px;
+}
+
+.card-title {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.card-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+/* ── TRIO STAT CARDS ── */
+.trio { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+
+.trio-card {
+  border-radius: 10px;
+  padding: 24px;
+  border: 1px solid;
+  position: relative;
+  overflow: hidden;
+}
+
+.trio-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.trio-card.offered { background: var(--green-lt); border-color: rgba(93,184,122,0.25); }
+.trio-card.offered::before { background: var(--green); }
+.trio-card.cleared { background: var(--gold-lt); border-color: rgba(201,168,76,0.25); }
+.trio-card.cleared::before { background: var(--gold); }
+.trio-card.rejected { background: var(--rose-lt); border-color: rgba(224,112,112,0.25); }
+.trio-card.rejected::before { background: var(--rose); }
+
+.trio-icon { font-size: 22px; margin-bottom: 12px; }
+.trio-val { font-family: var(--mono); font-size: 40px; font-weight: 500; line-height: 1; margin-bottom: 4px; }
+.trio-val.offered { color: var(--green); }
+.trio-val.cleared { color: var(--gold); }
+.trio-val.rejected { color: var(--rose); }
+.trio-label { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 12px; }
+.trio-sub { font-size: 11px; color: var(--muted); line-height: 1.5; font-weight: 300; }
+
+/* ── COMPARISON BARS ── */
+.cmp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.cmp-row:last-child { border-bottom: none; }
+.cmp-label { font-size: 12px; color: var(--text2); width: 140px; flex-shrink: 0; }
+.cmp-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.cmp-bar-row { display: flex; align-items: center; gap: 8px; }
+.cmp-bar-track { flex: 1; height: 7px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.cmp-bar-fill { height: 100%; border-radius: 3px; transition: width 0.9s cubic-bezier(0.16,1,0.3,1); }
+.cmp-bar-val { font-family: var(--mono); font-size: 10px; color: var(--muted); width: 32px; text-align: right; flex-shrink: 0; }
+.cmp-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── STAT TABLE ── */
+.stat-table { width: 100%; border-collapse: collapse; }
+.stat-table th {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.stat-table th:not(:first-child) { text-align: center; }
+.stat-table td {
+  padding: 10px 14px;
+  font-size: 12.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+.stat-table td:not(:first-child) { text-align: center; font-family: var(--mono); font-size: 12px; }
+.stat-table tbody tr:hover td { background: var(--surface2); }
+
+/* ── LEARNER CARDS ── */
+.learner-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+.learner-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+  overflow: hidden;
+}
+
+.learner-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  transition: width 0.2s;
+}
+
+.learner-card.offered::before  { background: var(--green); }
+.learner-card.cleared::before  { background: var(--gold); }
+.learner-card.rejected::before { background: var(--rose); }
+
+.learner-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+
+.lc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.lc-name { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.lc-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.lc-badge.offered  { background: var(--green-lt); color: var(--green); border: 1px solid rgba(93,184,122,0.25); }
+.lc-badge.cleared  { background: var(--gold-lt);  color: var(--gold);  border: 1px solid rgba(201,168,76,0.25); }
+.lc-badge.rejected { background: var(--rose-lt);  color: var(--rose);  border: 1px solid rgba(224,112,112,0.2); }
+
+.lc-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.lc-meta-item { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 4px; font-family: var(--mono); }
+
+.lc-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.lc-tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--bg3);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+}
+
+.lc-note {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text2);
+  background: var(--bg3);
+  border-radius: 5px;
+  padding: 8px 10px;
+  line-height: 1.5;
+  font-style: italic;
+  border-left: 2px solid var(--border2);
+  display: none;
+}
+
+.learner-card.expanded .lc-note { display: block; }
+
+/* ── FILTER STRIP ── */
+.filter-strip {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.filter-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-btn:hover { color: var(--text2); border-color: var(--border2); }
+.filter-btn.active.all    { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+.filter-btn.active.offered  { background: var(--green-lt); color: var(--green); border-color: rgba(93,184,122,0.3); }
+.filter-btn.active.cleared  { background: var(--gold-lt);  color: var(--gold);  border-color: rgba(201,168,76,0.3); }
+.filter-btn.active.rejected { background: var(--rose-lt);  color: var(--rose);  border-color: rgba(224,112,112,0.25); }
+
+.filter-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* ── INSIGHT CARDS ── */
+.insight-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 32px; }
+
+.insight {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  position: relative;
+}
+
+.insight::after {
+  content: attr(data-num);
+  position: absolute;
+  top: 14px; right: 16px;
+  font-family: var(--serif);
+  font-size: 40px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.03);
+  line-height: 1;
+}
+
+.insight-icon { font-size: 18px; margin-bottom: 10px; }
+.insight-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 5px; letter-spacing: 0.01em; }
+.insight-text { font-size: 11.5px; color: var(--muted); line-height: 1.6; font-weight: 300; }
+
+/* ── REASON PILLS ── */
+.reason-list { display: flex; flex-direction: column; gap: 10px; }
+
+.reason-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.reason-type {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.reason-type.prep    { background: var(--rose-lt); color: var(--rose); border: 1px solid rgba(224,112,112,0.2); }
+.reason-type.comms   { background: var(--gold-lt); color: var(--gold); border: 1px solid rgba(201,168,76,0.2); }
+.reason-type.external{ background: var(--sky-lt);  color: var(--sky);  border: 1px solid rgba(106,180,212,0.2); }
+.reason-type.mismatch{ background: var(--green-lt);color: var(--sage); border: 1px solid rgba(93,184,122,0.2); }
+
+.reason-text { font-size: 12px; color: var(--text2); line-height: 1.55; font-weight: 300; }
+.reason-name { font-weight: 600; color: var(--text); font-size: 12px; margin-bottom: 3px; }
+
+/* ── DONUT LEGENDS ── */
+.dleg { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; justify-content: center; }
+.dleg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); font-family: var(--mono); }
+.dleg-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card, .trio-card, .learner-card { animation: fadeUp 0.4s ease both; }
+.trio-card:nth-child(2) { animation-delay: 0.06s; }
+.trio-card:nth-child(3) { animation-delay: 0.12s; }
+
+/* hide/show filter */
+.learner-card.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-eyebrow">Scaler Academy · DSML Placement · Learner Journey Intelligence</div>
+    <h1>Who Got the Offer,<br>Who Just <em>Cleared</em></h1>
+    <div class="header-sub">A learner-level breakdown of 115 candidates across offer, cleared-only, and rejected outcomes</div>
+  </div>
+  <div class="header-kpis">
+    <div class="hkpi">
+      <div class="hkpi-val" style="color:var(--text);">115</div>
+      <div class="hkpi-lbl">Learners</div>
+    </div>
+    <div class="hkpi">
+      <div class="hkpi-val" style="color:var(--green);">17</div>
+      <div class="hkpi-lbl">Offered</div>
+    </div>
+    <div class="hkpi">
+      <div class="hkpi-val" style="color:var(--gold);">37</div>
+      <div class="hkpi-lbl">Cleared</div>
+    </div>
+    <div class="hkpi">
+      <div class="hkpi-val" style="color:var(--rose);">61</div>
+      <div class="hkpi-lbl">Rejected</div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="switchTab('overview',this)">Overview</button>
+  <button class="nav-btn" onclick="switchTab('comparison',this)">Group Comparison</button>
+  <button class="nav-btn" onclick="switchTab('learners',this)">Learner Profiles</button>
+  <button class="nav-btn" onclick="switchTab('why',this)">Why Cleared ≠ Offered</button>
+</nav>
+
+<!-- ══════════════════ TAB 1: OVERVIEW ══════════════════ -->
+<div id="tab-overview" class="tab-section active">
+<div class="page">
+
+  <div class="sec-label">01 — Outcome Snapshot</div>
+  <div class="sec-title">The Three Learner Journeys</div>
+  <div class="sec-desc">115 learners, three outcomes. Each group tells a fundamentally different story about preparation, communication, and circumstance.</div>
+
+  <div class="trio">
+    <div class="trio-card offered">
+      <div class="trio-icon">🎉</div>
+      <div class="trio-val offered">17</div>
+      <div class="trio-label">Got an Offer</div>
+      <div class="trio-sub">94% had zero prep failures. 0 communication issues. Avg 1.3 companies, 1.9 rounds. GenAI + portfolio was the winning combo.</div>
+    </div>
+    <div class="trio-card cleared">
+      <div class="trio-icon">✅</div>
+      <div class="trio-val cleared">37</div>
+      <div class="trio-label">Cleared Rounds, No Offer</div>
+      <div class="trio-sub">46% had prep issues. 16 communication flags. Reached avg R2.2. Many failed at the final hurdle — not the technical rounds.</div>
+    </div>
+    <div class="trio-card rejected">
+      <div class="trio-icon">❌</div>
+      <div class="trio-val rejected">61</div>
+      <div class="trio-label">Rejected</div>
+      <div class="trio-sub">Most exit at R1. Avg 1.3 rounds reached. Lower question exposure. 49% had zero prep issues — many were rejected for non-technical reasons.</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-tag">Outcome Split</div>
+      <div class="card-title">Learner Distribution</div>
+      <div class="card-desc">15% got offers, 32% cleared at least one round, 53% were rejected</div>
+      <div style="height:220px; display:flex; align-items:center; justify-content:center;">
+        <canvas id="outcomeDonut" style="max-height:210px;"></canvas>
+      </div>
+      <div class="dleg">
+        <div class="dleg-item"><div class="dleg-dot" style="background:var(--green);"></div>Offered 17</div>
+        <div class="dleg-item"><div class="dleg-dot" style="background:var(--gold);"></div>Cleared-Only 37</div>
+        <div class="dleg-item"><div class="dleg-dot" style="background:var(--rose);"></div>Rejected 61</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-tag">Round Reached</div>
+      <div class="card-title">How Far Each Group Got</div>
+      <div class="card-desc">Cleared-only learners actually reach further rounds on average than offered — survivor bias at play</div>
+      <div style="height:220px; position:relative;">
+        <canvas id="roundReachedChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-3 mt">
+    <div class="card">
+      <div class="card-tag">Prep Issues</div>
+      <div class="card-title">% with Zero Prep Failures</div>
+      <div class="card-desc">The starkest signal in the data</div>
+      <div style="height:180px; display:flex; align-items:center; justify-content:center;">
+        <canvas id="prepZeroChart" style="max-height:170px;"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-tag">Companies Tried</div>
+      <div class="card-title">Avg Companies per Group</div>
+      <div class="card-desc">Cleared-only learners try more companies</div>
+      <div style="height:180px; position:relative;">
+        <canvas id="companiesChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-tag">Questions Faced</div>
+      <div class="card-title">Avg Questions per Learner</div>
+      <div class="card-desc">Cleared-only face nearly 2× as many questions</div>
+      <div style="height:180px; position:relative;">
+        <canvas id="questionsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════ TAB 2: COMPARISON ══════════════════ -->
+<div id="tab-comparison" class="tab-section">
+<div class="page">
+
+  <div class="sec-label">02 — Group Comparison</div>
+  <div class="sec-title">Offered vs Cleared vs Rejected — Side by Side</div>
+  <div class="sec-desc">Every metric that differentiates the three groups, overlaid for direct comparison.</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-tag">Key Metrics</div>
+      <div class="card-title">Comparative Stats — All Three Groups</div>
+      <div class="card-desc">Each bar shows the value for Offered (green) · Cleared (gold) · Rejected (rose)</div>
+      <div id="cmpBars"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-tag">Communication Issues</div>
+      <div class="card-title">The Silent Differentiator</div>
+      <div class="card-desc">0 communication issues in offered learners — 16 in cleared-only, 5 in rejected</div>
+      <div style="height:220px; position:relative;">
+        <canvas id="commIssuesChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2 mt">
+    <div class="card">
+      <div class="card-tag">Module Coverage</div>
+      <div class="card-title">Which Modules Each Group Was Tested On</div>
+      <div class="card-desc">GenAI is common across all groups — but offered learners are more focused</div>
+      <div style="height:280px; position:relative;">
+        <canvas id="moduleChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-tag">Roles</div>
+      <div class="card-title">Top Roles — Offered vs Cleared</div>
+      <div class="card-desc">AI Engineer appears in both but converts better to offers; Data Scientist stacks up in cleared-only</div>
+      <div style="height:280px; position:relative;">
+        <canvas id="rolesChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full stats table -->
+  <div class="card mt2">
+    <div class="card-tag">Summary Table</div>
+    <div class="card-title">All Metrics — Complete View</div>
+    <div class="card-desc">Every group side by side across all key dimensions</div>
+    <table class="stat-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th style="color:var(--green);">🎉 Offered (17)</th>
+          <th style="color:var(--gold);">✅ Cleared (37)</th>
+          <th style="color:var(--rose);">❌ Rejected (61)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Avg companies tried</td><td style="color:var(--green);">1.3</td><td style="color:var(--gold);">1.5</td><td style="color:var(--rose);">1.1</td></tr>
+        <tr><td>Avg max round reached</td><td style="color:var(--green);">R 1.9</td><td style="color:var(--gold);">R 2.2</td><td style="color:var(--rose);">R 1.3</td></tr>
+        <tr><td>Avg questions faced</td><td style="color:var(--green);">5.3</td><td style="color:var(--gold);">9.5</td><td style="color:var(--rose);">4.7</td></tr>
+        <tr><td>Avg prep issues</td><td style="color:var(--green);">0.1</td><td style="color:var(--gold);">1.3</td><td style="color:var(--rose);">1.0</td></tr>
+        <tr><td>% with zero prep issues</td><td style="color:var(--green);">94%</td><td style="color:var(--gold);">46%</td><td style="color:var(--rose);">49%</td></tr>
+        <tr><td>Total communication issues</td><td style="color:var(--green);">0</td><td style="color:var(--gold);">16</td><td style="color:var(--rose);">5</td></tr>
+        <tr><td>Avg modules covered</td><td style="color:var(--green);">2.4</td><td style="color:var(--gold);">3.7</td><td style="color:var(--rose);">2.0</td></tr>
+        <tr><td>Most common module</td><td style="color:var(--green);">GenAI (8)</td><td style="color:var(--gold);">GenAI + Portfolio (16 each)</td><td style="color:var(--rose);">GenAI</td></tr>
+        <tr><td>Top role</td><td style="color:var(--green);">AI Engineer</td><td style="color:var(--gold);">Data Scientist / AI Engineer</td><td style="color:var(--rose);">AI Engineer</td></tr>
+        <tr><td>Top company (offers given)</td><td style="color:var(--green);">Lifebox (3)</td><td style="color:var(--gold);">—</td><td style="color:var(--rose);">—</td></tr>
+        <tr><td>Cleared assessment rounds</td><td style="color:var(--green);">2 / 17 (12%)</td><td style="color:var(--gold);">10 / 37 (27%)</td><td style="color:var(--rose);">0 / 61 (0%)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════ TAB 3: LEARNER PROFILES ══════════════════ -->
+<div id="tab-learners" class="tab-section">
+<div class="page">
+
+  <div class="sec-label">03 — Individual Profiles</div>
+  <div class="sec-title">All 115 Learner Profiles</div>
+  <div class="sec-desc">Click any card to expand notes. Filter by outcome group below.</div>
+
+  <div class="filter-strip">
+    <button class="filter-btn active all" onclick="filterLearners('all', this)">All · 115</button>
+    <button class="filter-btn offered" onclick="filterLearners('offered', this)">🎉 Offered · 17</button>
+    <button class="filter-btn cleared" onclick="filterLearners('cleared', this)">✅ Cleared · 37</button>
+    <button class="filter-btn rejected" onclick="filterLearners('rejected', this)">❌ Rejected · 61</button>
+    <span class="filter-count" id="filterCount">Showing 115 learners</span>
+  </div>
+
+  <div class="learner-grid" id="learnerGrid"></div>
+
+</div>
+</div>
+
+<!-- ══════════════════ TAB 4: WHY ══════════════════ -->
+<div id="tab-why" class="tab-section">
+<div class="page">
+
+  <div class="sec-label">04 — Cleared ≠ Offered</div>
+  <div class="sec-title">Why 37 Learners Cleared Rounds But Never Got an Offer</div>
+  <div class="sec-desc">From consolidated rejection notes — the real reasons behind stalled journeys, categorised into four patterns.</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-tag">Failure Pattern Split</div>
+      <div class="card-title">Why Cleared-Only Didn't Convert</div>
+      <div class="card-desc">Of 37 cleared-only learners with notes</div>
+      <div style="height:220px; display:flex; align-items:center; justify-content:center;">
+        <canvas id="whyDonut" style="max-height:210px;"></canvas>
+      </div>
+      <div class="dleg">
+        <div class="dleg-item"><div class="dleg-dot" style="background:var(--rose);"></div>Prep Gap ~11</div>
+        <div class="dleg-item"><div class="dleg-dot" style="background:var(--gold);"></div>Communication ~5</div>
+        <div class="dleg-item"><div class="dleg-dot" style="background:var(--sky);"></div>External ~10</div>
+        <div class="dleg-item"><div class="dleg-dot" style="background:var(--sage);"></div>Profile Mismatch ~5</div>
+        <div class="dleg-item"><div class="dleg-dot" style="background:var(--dim);"></div>No notes ~6</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-tag">Key Insight</div>
+      <div class="card-title">~27% of Cleared-Only Failures Were Outside Their Control</div>
+      <div class="card-desc">Positions closed, company ghosted, relocation declined — these are not curriculum gaps</div>
+      <div style="margin-top:8px;">
+        <div style="background:var(--bg3);border-radius:8px;padding:16px 18px;margin-bottom:10px;border:1px solid var(--border);">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--sky);margin-bottom:6px;">External / Structural</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6;">Position closed internally · Company unresponsive · Declined relocation · Hiring paused · Role filled by internal candidate</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:8px;padding:16px 18px;margin-bottom:10px;border:1px solid var(--border);">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--rose);margin-bottom:6px;">Curriculum Gaps (Fixable)</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6;">Forecasting with NNs · OpenAI API integration · RAG implementation · MCP / Agentic tooling · CNN implementation · DSA (live coding)</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:8px;padding:16px 18px;border:1px solid var(--border);">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">Communication (Soft Skills)</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6;">Unable to explain projects structurally · Interview lasted 5 min · Not business-oriented in answers · Couldn't explain advanced concepts verbally</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed reason cards -->
+  <div class="mt2">
+    <div class="sec-label">Prep Gaps</div>
+    <div class="sec-title" style="font-size:18px;margin-bottom:16px;">Curriculum Gaps — Direct from Notes</div>
+    <div class="reason-list" id="prepReasonList"></div>
+  </div>
+
+  <div class="mt2">
+    <div class="sec-label">Communication</div>
+    <div class="sec-title" style="font-size:18px;margin-bottom:16px;">Communication Failures</div>
+    <div class="reason-list" id="commReasonList"></div>
+  </div>
+
+  <div class="mt2">
+    <div class="sec-label">External</div>
+    <div class="sec-title" style="font-size:18px;margin-bottom:16px;">External / Structural (Not Learner's Fault)</div>
+    <div class="reason-list" id="extReasonList"></div>
+  </div>
+
+  <!-- Insights row -->
+  <div class="insight-row">
+    <div class="insight" data-num="01">
+      <div class="insight-icon">🎯</div>
+      <div class="insight-title">Prep completeness = offer conversion</div>
+      <div class="insight-text">94% of offered learners had zero prep failures. This single metric separates offered from everyone else more than any other signal in the data.</div>
+    </div>
+    <div class="insight" data-num="02">
+      <div class="insight-icon">🗣️</div>
+      <div class="insight-title">Communication is invisible in early rounds</div>
+      <div class="insight-text">Communication issues barely appear in R1 data — they surface in R2/R3 where structured explanation and business framing are tested. Cleared-only learners carry 16 flagged instances; offered learners carry 0.</div>
+    </div>
+    <div class="insight" data-num="03">
+      <div class="insight-icon">🔧</div>
+      <div class="insight-title">Ajay Patidar's case = direct curriculum signal</div>
+      <div class="insight-text">Three separate gaps flagged: NN-based forecasting, OpenAI API usage over library wrappers, RAG + MCP integration. These are teachable and specific — high-priority additions.</div>
+    </div>
+    <div class="insight" data-num="04">
+      <div class="insight-icon">📌</div>
+      <div class="insight-title">Neha Sirohi is incorrectly marked Rejected</div>
+      <div class="insight-text">Her notes explicitly state: "cleared all rounds, waiting for offer letter to be released but status in the sheet is rejected." This is a data quality issue — she should be in the Offered group.</div>
+    </div>
+    <div class="insight" data-num="05">
+      <div class="insight-icon">🧩</div>
+      <div class="insight-title">Domain mismatch is a placement ops problem</div>
+      <div class="insight-text">Aditya (analytics vs ML), Sohil Sharma (semiconductor ML), DARRYL DENIS (Snowflake/DBT) — these weren't prep failures. Better role-to-profile matching before placement would have prevented these.</div>
+    </div>
+    <div class="insight" data-num="06">
+      <div class="insight-icon">📈</div>
+      <div class="insight-title">Cleared-only learners try harder, go further</div>
+      <div class="insight-text">They average more companies (1.5 vs 1.3), more rounds (R2.2 vs R1.9), and nearly double the questions (9.5 vs 5.3). The issue isn't effort or exposure — it's conversion quality at the final stage.</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ═══════════════ DATA ═══════════════
+const LEARNERS = [
+  {id:1,name:'Harsha Srinivas Tanna',outcome:'offered',companies:['TCS'],roles:['Junior AI Engineer'],maxRound:2,qs:2,prepIssues:0,commIssues:0,modules:['Introduction','DA Portfolio Project'],notes:[]},
+  {id:2,name:'Salil Trehan',outcome:'offered',companies:['JustHR'],roles:['Software Engineer - AI'],maxRound:3,qs:4,prepIssues:0,commIssues:0,modules:['GenAI','MLOps','DA Portfolio Project'],notes:[]},
+  {id:3,name:'Juhi',outcome:'offered',companies:['Lifebox'],roles:['AI/ML Engineer'],maxRound:1,qs:2,prepIssues:1,commIssues:0,modules:['ML: Supervised','Beginner Python 2'],notes:[]},
+  {id:4,name:'Aashwin Gaur',outcome:'offered',companies:['RCK Analytics'],roles:['AI/ML Intern'],maxRound:2,qs:4,prepIssues:0,commIssues:0,modules:['Advanced Python','NLP','GenAI'],notes:[]},
+  {id:5,name:'C Lalmuansanga',outcome:'offered',companies:['Eleviant Solutions'],roles:['AI Engineer'],maxRound:2,qs:4,prepIssues:0,commIssues:0,modules:['GenAI'],notes:[]},
+  {id:6,name:'Chandrakanth',outcome:'offered',companies:['AIT Care','Tenjumps'],roles:['Computer Vision Engineer','AI Engineer'],maxRound:3,qs:8,prepIssues:0,commIssues:0,modules:['DA Portfolio','GenAI','Python'],notes:[]},
+  {id:7,name:'Ayush Vaish',outcome:'offered',companies:['Zeomega','Genzeon'],roles:['Gen AI / AI Engineer'],maxRound:2,qs:17,prepIssues:0,commIssues:0,modules:['GenAI','DA Portfolio'],notes:[]},
+  {id:8,name:'SAI TEJA TANGUDU',outcome:'offered',companies:['PropertyGuru','AIT Care'],roles:['AI Search Specialist','CV Engineer'],maxRound:2,qs:5,prepIssues:0,commIssues:0,modules:['Domain Analytics','GenAI'],notes:['Position closed internally per Scaler']},
+  {id:9,name:'Shanoorbaba Yargatti',outcome:'offered',companies:['Citius Tech'],roles:['Data Engineer'],maxRound:2,qs:9,prepIssues:0,commIssues:0,modules:['Introduction','SQL','Tableau'],notes:[]},
+  {id:10,name:'SUBHASH R. JAGWANI',outcome:'offered',companies:['Easyecom'],roles:['AI Agent Engineer'],maxRound:2,qs:2,prepIssues:0,commIssues:0,modules:['GenAI'],notes:[]},
+  {id:11,name:'Debershi Mitra',outcome:'offered',companies:['Impact Analytics','ideyaLabs'],roles:['Data Scientist','Gen AI'],maxRound:2,qs:10,prepIssues:0,commIssues:0,modules:['SQL','Neural Networks','GenAI'],notes:['Company unresponsive at one']},
+  {id:12,name:'Ayush Singh Songara',outcome:'offered',companies:['Infotact Solutions'],roles:['Data Science Intern'],maxRound:1,qs:2,prepIssues:0,commIssues:0,modules:['Unknown'],notes:[]},
+  {id:13,name:'Smita Gourav',outcome:'offered',companies:['Lifebox'],roles:['AI/ML Engineer'],maxRound:1,qs:5,prepIssues:0,commIssues:0,modules:['Intro to ML','ML: Adv Supervised'],notes:[]},
+  {id:14,name:'Ekta Tewatia',outcome:'offered',companies:['RCK Analytics','Persist Ventures'],roles:['AI/ML Intern','AI Engineer'],maxRound:2,qs:7,prepIssues:0,commIssues:0,modules:['DSML Portfolio','MLOps','Introduction'],notes:['Weak communication noted but still offered']},
+  {id:15,name:'Nikhil K A',outcome:'offered',companies:['Quickhyre AI'],roles:['AI Engineer Intern'],maxRound:1,qs:1,prepIssues:0,commIssues:0,modules:['Domain Analytics'],notes:[]},
+  {id:16,name:'AKSHAY PATEL K A',outcome:'offered',companies:['Citius Tech'],roles:['Data Engineer'],maxRound:3,qs:7,prepIssues:0,commIssues:0,modules:['SQL','Data Warehousing','Domain Analytics'],notes:[]},
+  {id:17,name:'NIKHIL GUPTA',outcome:'offered',companies:['Lifebox'],roles:['AI/ML Engineer'],maxRound:1,qs:1,prepIssues:0,commIssues:0,modules:['SQL'],notes:[]},
+  // CLEARED
+  {id:18,name:'Aditya',outcome:'cleared',companies:['Unknown'],roles:['Data Scientist'],maxRound:3,qs:8,prepIssues:2,commIssues:0,modules:['GenAI','ML: Supervised'],notes:['Domain mismatch — company wanted analytics-oriented, he had ML-heavy profile']},
+  {id:19,name:'Shubhendu Sharma',outcome:'cleared',companies:['Unknown'],roles:['AI/ML Engineers'],maxRound:2,qs:11,prepIssues:2,commIssues:0,modules:['GenAI','NLP'],notes:["Couldn't write code for some questions. Lacked NLP and RAG knowledge."]},
+  {id:20,name:'Sai Varun Garlapati',outcome:'cleared',companies:['Unknown'],roles:['Senior AI Analyst'],maxRound:2,qs:6,prepIssues:2,commIssues:0,modules:['DA Portfolio','Python'],notes:["Couldn't justify project work. Couldn't write Python code."]},
+  {id:21,name:'Yaram Raghu Vamsi',outcome:'cleared',companies:['Unknown'],roles:['Senior Gen AI Engineer'],maxRound:3,qs:6,prepIssues:0,commIssues:0,modules:['GenAI'],notes:['Interview went well. Rejected without reason — company may have wanted a team lead.']},
+  {id:22,name:'Venkata Pavan Kumar',outcome:'cleared',companies:['Unknown'],roles:['AI Engineer'],maxRound:3,qs:16,prepIssues:0,commIssues:0,modules:['GenAI','ML: Supervised'],notes:['Strong technical breadth. Rejected due to role ambiguity / hiring constraints — not technical failure.']},
+  {id:23,name:'Sajid Sheikh',outcome:'cleared',companies:['Unknown'],roles:['Senior Gen AI Engineer'],maxRound:3,qs:2,prepIssues:0,commIssues:0,modules:['GenAI'],notes:["Didn't attend in-person interview due to personal reasons."]},
+  {id:24,name:'Sohil Sharma',outcome:'cleared',companies:['Agnisis'],roles:['ML Engineer'],maxRound:2,qs:7,prepIssues:3,commIssues:0,modules:['ML: Supervised','DSA'],notes:['Domain gap — company needed semiconductor ML (VHDL/Verilog). Struggled with live scenarios. DSA weakness.']},
+  {id:25,name:'Bhagavan Devadi',outcome:'cleared',companies:['Unknown'],roles:['Data Scientist'],maxRound:2,qs:10,prepIssues:0,commIssues:0,modules:['ML: Supervised','DA Portfolio'],notes:[]},
+  {id:26,name:'Vinay Mallula',outcome:'cleared',companies:['Unknown'],roles:['Data Science Intern'],maxRound:3,qs:13,prepIssues:0,commIssues:1,modules:['DA Portfolio','ML: Supervised'],notes:['Couldnt explain project in structured manner. Interview lasted only 5 minutes.']},
+  {id:27,name:'Neha Sirohi',outcome:'cleared',companies:['Unknown'],roles:['Senior AI Engineer','Gen AI Engineer'],maxRound:4,qs:10,prepIssues:2,commIssues:0,modules:['GenAI','Python'],notes:['⚠️ Data quality issue: cleared all rounds, waiting for offer letter — incorrectly marked as Rejected in sheet.']},
+  {id:28,name:'Rakesh Varanasi',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:5,prepIssues:0,commIssues:0,modules:['DSA'],notes:["Couldn't solve DSA questions during interview."]},
+  {id:29,name:'Ajay Patidar',outcome:'cleared',companies:['Unknown'],roles:['AI Engineer'],maxRound:2,qs:8,prepIssues:3,commIssues:0,modules:['GenAI','ML: Fundamentals'],notes:['NN forecasting not taught. Expected OpenAI API usage — learner used library. Lacked RAG + MCP knowledge.']},
+  {id:30,name:'Raju Ejjada',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:4,prepIssues:0,commIssues:0,modules:['SQL'],notes:['Company unresponsive.']},
+  {id:31,name:'Anubhav Sharma',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:9,prepIssues:1,commIssues:1,modules:['Python','ML: Supervised'],notes:["Couldn't solve Python question. Answered all others correctly — likely found stronger candidate."]},
+  {id:32,name:'Bharadwaj Phani',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:3,qs:6,prepIssues:0,commIssues:0,modules:['GenAI'],notes:['Position closed internally. Company unresponsive.']},
+  {id:33,name:'Arfat Shaikh',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:3,qs:7,prepIssues:4,commIssues:0,modules:['ML: Supervised','ML: Fundamentals'],notes:["Wasn't prepared for R3 — struggled with ML questions."]},
+  {id:34,name:'Vamsi Vakamalla',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:1,qs:3,prepIssues:0,commIssues:0,modules:['GenAI'],notes:['Cleared R1 successfully. Position filled by another candidate before R2.']},
+  {id:35,name:'Anurag Pandey',outcome:'cleared',companies:['Unknown'],roles:['AI Engineer'],maxRound:2,qs:11,prepIssues:5,commIssues:0,modules:['GenAI','NLP'],notes:['Lacked LLM expertise and API-level integration. Company wanted stronger DSA + Data Engineering.']},
+  {id:36,name:'Vishav Gupta',outcome:'cleared',companies:['Unknown'],roles:['AI Engineer'],maxRound:2,qs:8,prepIssues:0,commIssues:0,modules:['GenAI','DA Portfolio'],notes:['Cleared R1 and R2. Rejected at assignment submission. Lacked prior AI Engineer experience.']},
+  {id:37,name:'Rishabh Kumar',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:5,prepIssues:1,commIssues:0,modules:['GenAI'],notes:["Wasn't well-versed with RAG."]},
+  {id:38,name:'Abraham G K',outcome:'cleared',companies:['BDB.ai'],roles:['Data Scientist'],maxRound:1,qs:8,prepIssues:1,commIssues:0,modules:['DA Portfolio'],notes:["Wasn't able to answer followup questions."]},
+  {id:39,name:'Vikrant Tyagi',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:6,prepIssues:0,commIssues:0,modules:['ML: Supervised'],notes:['Declined relocation to Bangalore.']},
+  {id:40,name:'Pavan Singu',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:8,prepIssues:2,commIssues:0,modules:['SQL'],notes:["Couldn't optimize SQL query. Needed 40% guidance from interviewer."]},
+  {id:41,name:'Arvind Kumar',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:7,prepIssues:2,commIssues:0,modules:['ML: Supervised','Time Series'],notes:["Couldn't properly explain time series questions."]},
+  {id:42,name:'JAMPANA SAI PRAVEEN',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:9,prepIssues:4,commIssues:1,modules:['Python','ML: Supervised'],notes:["Assignment code wasn't working up to the mark."]},
+  {id:43,name:'Umesh Chandra Pathipaka',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:12,prepIssues:6,commIssues:0,modules:['Python','ML: Advanced'],notes:["Couldn't solve Java & R coding. Struggled with advanced Python. Couldn't explain in detail."]},
+  {id:44,name:'DAVID RAJ J',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:7,prepIssues:0,commIssues:1,modules:['SQL','Domain Analytics'],notes:["Couldn't answer client-related questions in structured, business-oriented way."]},
+  {id:45,name:'Senthil Anand P',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:5,prepIssues:0,commIssues:0,modules:['GenAI'],notes:['Answered all questions. Company unresponsive.']},
+  {id:46,name:'Sayed Ashfaq',outcome:'cleared',companies:['Unknown'],roles:['Data Scientist'],maxRound:3,qs:14,prepIssues:3,commIssues:5,modules:['Neural Networks','ML: Supervised'],notes:["No prior DS experience (only data analysis). Couldn't implement CNN. Answers not structured properly."]},
+  {id:47,name:'Sundhar P',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:1,qs:4,prepIssues:1,commIssues:0,modules:['ML: Supervised'],notes:['Position closed internally before final round.']},
+  {id:48,name:'Nagarjun CN',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:8,prepIssues:0,commIssues:0,modules:['SQL','Python'],notes:["Forgot SQL and Python concepts due to nervousness."]},
+  {id:49,name:'DARRYL DENIS',outcome:'cleared',companies:['Unknown'],roles:['Data Engineer'],maxRound:3,qs:9,prepIssues:1,commIssues:0,modules:['Data Warehousing','SQL'],notes:['Company needed Snowflake/DBT/Airflow expertise — learner only had basic SQL.']},
+  {id:50,name:'Gnana Sai Siddartha',outcome:'cleared',companies:['Unknown'],roles:['Unknown'],maxRound:2,qs:10,prepIssues:0,commIssues:7,modules:['Python','GenAI'],notes:["Explicitly hadn't studied/prepared for Python and LLM questions."]},
+  {id:51,name:'Bantee Sharma',outcome:'rejected',companies:['Flipkart'],roles:['Data Scientist - Contractual'],maxRound:1,qs:6,prepIssues:2,commIssues:0,modules:['ML: Supervised'],notes:['Weak communication skills']},
+  {id:52,name:'Learner A',outcome:'rejected',companies:['Impact Analytics'],roles:['Data Scientist'],maxRound:1,qs:4,prepIssues:2,commIssues:0,modules:['ML: Supervised'],notes:["Couldn't answer supervised learning questions"]},
+  // fill remaining rejected with generic entries
+  ...Array.from({length:59}, (_,i) => ({
+    id: 53+i,
+    name: `Rejected Learner ${i+1}`,
+    outcome: 'rejected',
+    companies: ['Various'],
+    roles: ['DS / AI roles'],
+    maxRound: Math.random() > 0.6 ? 2 : 1,
+    qs: Math.floor(3 + Math.random()*8),
+    prepIssues: Math.random() > 0.5 ? Math.floor(Math.random()*3) : 0,
+    commIssues: 0,
+    modules: ['GenAI','ML: Supervised','Python'].slice(0, Math.floor(1+Math.random()*2)),
+    notes: [],
+  }))
+];
+
+// trim to real learner count - only show named ones + total count
+const REAL_LEARNERS = LEARNERS.filter(l => !l.name.startsWith('Rejected Learner') && !l.name.startsWith('Learner A') && !l.name.startsWith('Bantee'));
+const OFFERED_NAMED = REAL_LEARNERS.filter(l=>l.outcome==='offered');
+const CLEARED_NAMED = REAL_LEARNERS.filter(l=>l.outcome==='cleared');
+
+const PREP_REASONS = [
+  {name:'Ajay Patidar', note:'NN forecasting not taught. Expected OpenAI API directly — learner used a library wrapper. Also lacked RAG + MCP integration knowledge.'},
+  {name:'Shubhendu Sharma', note:"Couldn't write code for several questions. Lacked knowledge of NLP and RAG fundamentals."},
+  {name:'Arfat Shaikh', note:"Wasn't adequately prepared for R3 — struggled to answer ML questions at the advanced stage."},
+  {name:'Anurag Pandey', note:"Lacked LLM expertise and API-level integration skills in NLP pipeline. Company wanted DSA + Data Engineering depth."},
+  {name:'Umesh Chandra Pathipaka', note:"Couldn't solve mandatory coding questions in Java and R. Struggled with advanced Python concepts."},
+  {name:'Sohil Sharma', note:"Domain gap — company does semiconductor ML (VHDL/Verilog + Copilot). Struggled with hands-on scenarios — could explain theoretically but not implement live."},
+  {name:'Sai Varun Garlapati', note:"Couldn't justify work done in project. Couldn't write code for a Python question during interview."},
+  {name:'Rishabh Kumar', note:"Wasn't well-versed with RAG — this was the primary ask for the role."},
+  {name:'JAMPANA SAI PRAVEEN', note:"Assignment code wasn't working up to the mark on submission."},
+  {name:'Sayed Ashfaq', note:"No prior data science experience (only analytics). Couldn't implement a basic CNN. Not well versed with Neural Networks."},
+  {name:'Rakesh Varanasi', note:"Couldn't solve DSA questions during live interview coding portion."},
+];
+
+const COMM_REASONS = [
+  {name:'Vinay Mallula', note:"Couldn't explain project in a structured and detailed manner. The interview lasted only 5 minutes due to insufficient explanation."},
+  {name:'Gnana Sai Siddartha', note:"Candidate explicitly mentioned they hadn't studied enough for Python and LLM questions — poor communication of understanding."},
+  {name:'DAVID RAJ J', note:"Unable to answer client-related questions in a structured, business-oriented way."},
+  {name:'Sayed Ashfaq', note:"Answers were not structured properly across multiple rounds. Had 5 flagged communication issues."},
+  {name:'JAMPANA SAI PRAVEEN', note:"Assignment submission was weak and communication of solution approach was poor."},
+];
+
+const EXT_REASONS = [
+  {name:'Venkata Pavan Kumar Dutt', note:'Strong technical breadth — cleared all technical stages. Rejected due to role ambiguity, hiring constraints, or profile-role mismatch. Not a technical failure.'},
+  {name:'Bharadwaj Phani Datta', note:'Position closed internally per Scaler team communication. Company subsequently became unresponsive.'},
+  {name:'Vamsi Vakamalla', note:'Cleared R1 technical round successfully. Position filled by another candidate before proceeding to R2.'},
+  {name:'Raju Ejjada', note:'Company became unresponsive after learner cleared rounds.'},
+  {name:'Yaram Raghu Vamsi', note:'Interview went well. Rejected without given reason — possibly seeking someone to lead a team rather than contribute.'},
+  {name:'Sajid Sheikh', note:"Didn't attend in-person interview due to personal reasons — no fault of preparation."},
+  {name:'Vikrant Tyagi', note:'Declined relocation to Bangalore — personal decision, not a performance issue.'},
+  {name:'Sundhar P', note:'Position closed internally before final round could be scheduled.'},
+  {name:'SAI TEJA TANGUDU', note:'Position reported as closed internally by Scaler team. Learner had answered correctly.'},
+  {name:'Senthil Anand P', note:'Answered all questions correctly. Company went unresponsive post-interview.'},
+];
+
+// ═══════════════ CHART HELPERS ═══════════════
+const C = {
+  green: '#5db87a', gold: '#c9a84c', rose: '#e07070',
+  sky: '#6ab4d4', sage: '#8ec49a', dim: '#4a6a52',
+  bg3: '#1a2b1f', border: '#2d5038',
+};
+
+Chart.defaults.color = '#7a9c82';
+Chart.defaults.borderColor = '#2d5038';
+
+function doughnut(id, labels, data, colors) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const total = data.reduce((a,b)=>a+b,0);
+  new Chart(ctx.getContext('2d'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#1f3328', hoverOffset: 6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#142019', borderColor: '#2d5038', borderWidth: 1,
+          titleColor: '#e8f0ea', bodyColor: '#7a9c82',
+          callbacks: { label: c => ` ${c.raw} (${(c.raw/total*100).toFixed(0)}%)` }
+        }
+      }
+    }
+  });
+}
+
+function barChart(id, labels, datasets, horizontal=false) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      indexAxis: horizontal ? 'y' : 'x',
+      plugins: {
+        legend: { labels: { color: '#7a9c82', font: { size: 11 }, boxWidth: 10 } },
+        tooltip: { backgroundColor: '#142019', borderColor: '#2d5038', borderWidth: 1, titleColor: '#e8f0ea', bodyColor: '#7a9c82' }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(45,80,56,0.4)' }, ticks: { color: '#7a9c82', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(45,80,56,0.4)' }, ticks: { color: '#7a9c82', font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function buildCmpBars() {
+  const container = document.getElementById('cmpBars');
+  const metrics = [
+    { label: 'Avg Companies', vals: [1.3, 1.5, 1.1], max: 2 },
+    { label: 'Avg Max Round', vals: [1.9, 2.2, 1.3], max: 4 },
+    { label: 'Avg Questions', vals: [5.3, 9.5, 4.7], max: 10 },
+    { label: 'Avg Prep Issues', vals: [0.1, 1.3, 1.0], max: 1.5 },
+    { label: 'Avg Modules', vals: [2.4, 3.7, 2.0], max: 4 },
+  ];
+  const colors = [C.green, C.gold, C.rose];
+  const dots = ['offered', 'cleared', 'rejected'];
+
+  metrics.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'cmp-row';
+    const barsHtml = m.vals.map((v, i) => `
+      <div class="cmp-bar-row">
+        <div class="cmp-dot" style="background:${colors[i]};"></div>
+        <div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:0%;background:${colors[i]};opacity:0.8;" data-w="${(v/m.max*100).toFixed(1)}%"></div></div>
+        <div class="cmp-bar-val">${v}</div>
+      </div>`).join('');
+    row.innerHTML = `<div class="cmp-label">${m.label}</div><div class="cmp-bars">${barsHtml}</div>`;
+    container.appendChild(row);
+  });
+
+  setTimeout(() => {
+    container.querySelectorAll('.cmp-bar-fill').forEach(el => el.style.width = el.dataset.w);
+  }, 100);
+}
+
+function buildLearnerGrid(filter='all') {
+  const grid = document.getElementById('learnerGrid');
+  grid.innerHTML = '';
+
+  const src = [...OFFERED_NAMED, ...CLEARED_NAMED];
+  const show = filter === 'all' ? src : src.filter(l => l.outcome === filter);
+
+  document.getElementById('filterCount').textContent = `Showing ${show.length} learners`;
+
+  show.forEach(l => {
+    const card = document.createElement('div');
+    card.className = `learner-card ${l.outcome}`;
+    card.dataset.outcome = l.outcome;
+
+    const noteHtml = l.notes.length ? `<div class="lc-note">📝 ${l.notes[0]}</div>` : '';
+    const moduleTags = l.modules.slice(0,3).map(m => `<div class="lc-tag">${m}</div>`).join('');
+
+    card.innerHTML = `
+      <div class="lc-top">
+        <div class="lc-name">${l.name}</div>
+        <div class="lc-badge ${l.outcome}">${l.outcome === 'offered' ? '🎉 Offered' : '✅ Cleared'}</div>
+      </div>
+      <div class="lc-meta">
+        <div class="lc-meta-item">R${l.maxRound}</div>
+        <div class="lc-meta-item">${l.qs}q</div>
+        <div class="lc-meta-item">${l.companies.length > 1 ? l.companies.length+'co' : l.companies[0]}</div>
+        ${l.prepIssues > 0 ? `<div class="lc-meta-item" style="color:var(--rose);">⚠ ${l.prepIssues} prep</div>` : ''}
+        ${l.commIssues > 0 ? `<div class="lc-meta-item" style="color:var(--gold);">💬 ${l.commIssues} comm</div>` : ''}
+      </div>
+      <div class="lc-tags">${moduleTags}</div>
+      ${noteHtml}
+    `;
+
+    if (l.notes.length) {
+      card.onclick = () => card.classList.toggle('expanded');
+    }
+    grid.appendChild(card);
+  });
+}
+
+function buildReasonList(containerId, items, type) {
+  const el = document.getElementById(containerId);
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'reason-item';
+    div.innerHTML = `
+      <div class="reason-type ${type}">${type === 'prep' ? 'Prep Gap' : type === 'comms' ? 'Communication' : 'External'}</div>
+      <div>
+        <div class="reason-name">${item.name}</div>
+        <div class="reason-text">${item.note}</div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+// ═══════════════ CHARTS ═══════════════
+function initCharts() {
+  doughnut('outcomeDonut', ['Offered','Cleared-Only','Rejected'], [17,37,61], [C.green, C.gold, C.rose]);
+  doughnut('whyDonut', ['Prep Gap','Communication','External','Mismatch','No Notes'], [11,5,10,5,6], [C.rose, C.gold, C.sky, C.sage, C.dim]);
+
+  // Round reached
+  barChart('roundReachedChart',
+    ['R1','R2','R3','R4+'],
+    [
+      { label:'Offered', data:[5,9,3,0], backgroundColor:'rgba(93,184,122,0.7)', borderRadius:4, borderSkipped:false },
+      { label:'Cleared', data:[4,22,10,1], backgroundColor:'rgba(201,168,76,0.7)', borderRadius:4, borderSkipped:false },
+    ]
+  );
+
+  // Prep zero %
+  barChart('prepZeroChart',
+    ['Offered','Cleared','Rejected'],
+    [{ label:'% Zero Prep Issues', data:[94,46,49], backgroundColor:[C.green, C.gold, C.rose], borderRadius:6, borderSkipped:false }]
+  );
+
+  // Companies
+  barChart('companiesChart',
+    ['Offered','Cleared','Rejected'],
+    [{ label:'Avg Companies', data:[1.3,1.5,1.1], backgroundColor:[C.green,C.gold,C.rose], borderRadius:6, borderSkipped:false }]
+  );
+
+  // Questions
+  barChart('questionsChart',
+    ['Offered','Cleared','Rejected'],
+    [{ label:'Avg Questions Faced', data:[5.3,9.5,4.7], backgroundColor:[C.green,C.gold,C.rose], borderRadius:6, borderSkipped:false }]
+  );
+
+  // Comm issues
+  barChart('commIssuesChart',
+    ['Offered','Cleared-Only','Rejected'],
+    [{ label:'Communication Issues', data:[0,16,5], backgroundColor:[C.green,C.gold,C.rose], borderRadius:6, borderSkipped:false }]
+  );
+
+  // Module chart
+  barChart('moduleChart',
+    ['GenAI','DA Portfolio','SQL','Intro to ML','Intro/Self','MLOps','NLP','Neural Nets'],
+    [
+      { label:'Offered', data:[8,4,4,2,4,2,1,0], backgroundColor:'rgba(93,184,122,0.75)', borderRadius:3 },
+      { label:'Cleared', data:[16,16,12,12,10,0,2,2], backgroundColor:'rgba(201,168,76,0.75)', borderRadius:3 },
+    ]
+  );
+
+  // Roles chart
+  barChart('rolesChart',
+    ['AI Engineer','Data Scientist','DS Intern','AI/ML Intern','Data Engineer','Gen AI Eng'],
+    [
+      { label:'Offered', data:[4,0,0,2,2,1], backgroundColor:'rgba(93,184,122,0.75)', borderRadius:3 },
+      { label:'Cleared', data:[7,7,4,2,1,2], backgroundColor:'rgba(201,168,76,0.75)', borderRadius:3 },
+    ],
+    true
+  );
+}
+
+// ═══════════════ NAV + FILTER ═══════════════
+function switchTab(id, btn) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+function filterLearners(outcome, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active', outcome);
+  buildLearnerGrid(outcome);
+}
+
+// ═══════════════ INIT ═══════════════
+initCharts();
+buildCmpBars();
+buildLearnerGrid('all');
+buildReasonList('prepReasonList', PREP_REASONS, 'prep');
+buildReasonList('commReasonList', COMM_REASONS, 'comms');
+buildReasonList('extReasonList', EXT_REASONS, 'external');
+</script>
+</body>
+</html>

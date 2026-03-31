@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curriculum Intelligence — DSML</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:       #eef0f4;
+  --bg2:      #e5e8ee;
+  --bg3:      #d8dce6;
+  --surface:  #ffffff;
+  --surface2: #f7f8fa;
+  --border:   #d0d5e0;
+  --border2:  #b8bfd0;
+
+  --navy:     #1a2438;
+  --navy2:    #2c3a52;
+  --navy3:    #3f506e;
+  --muted:    #6b7a94;
+  --dim:      #9aa4b8;
+
+  --coral:    #e8522a;
+  --coral-lt: #fce8e1;
+  --blue:     #1a5fbf;
+  --blue-lt:  #deeafa;
+  --teal:     #0e9488;
+  --teal-lt:  #d0f0ed;
+  --amber:    #b45309;
+  --amber-lt: #fef3c0;
+  --violet:   #6d28d9;
+  --violet-lt:#ede9fe;
+
+  --urgent-c: #e8522a;
+  --healthy-c:#0e9488;
+  --monitor-c:#b45309;
+  --low-c:    #6b7a94;
+
+  --font:     'Barlow', sans-serif;
+  --display:  'Syne', sans-serif;
+  --cond:     'Barlow Condensed', sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--navy);
+  font-family: var(--font);
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--navy);
+  padding: 40px 56px 32px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 48px;
+}
+
+.hdr-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--coral);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hdr-eyebrow::before { content:''; width:20px; height:1px; background:var(--coral); }
+
+.header h1 {
+  font-family: var(--display);
+  font-size: 38px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.header h1 span { color: var(--coral); }
+
+.header-desc {
+  font-size: 13px;
+  color: #8898b8;
+  margin-top: 8px;
+  font-weight: 300;
+  max-width: 560px;
+  line-height: 1.6;
+}
+
+.hdr-stats { display: flex; gap: 1px; }
+
+.hstat {
+  background: #243050;
+  padding: 18px 24px;
+  text-align: center;
+  min-width: 88px;
+}
+.hstat:first-child { border-radius: 8px 0 0 8px; }
+.hstat:last-child  { border-radius: 0 8px 8px 0; }
+
+.hstat-val {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.hstat-lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8898b8;
+}
+
+/* ── NAV ── */
+.nav {
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  padding: 0 56px;
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(26,36,56,0.06);
+}
+
+.nav-btn {
+  font-family: var(--cond);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 16px 22px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+.nav-btn:hover { color: var(--navy); }
+.nav-btn.active { color: var(--coral); border-bottom-color: var(--coral); }
+
+.tab-section { display: none; }
+.tab-section.active { display: block; }
+
+/* ── PAGE ── */
+.page { padding: 40px 56px 72px; }
+
+.sec-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--coral);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sec-eyebrow::before { content:''; width:16px; height:1.5px; background:var(--coral); }
+
+.sec-title {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--navy);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.sec-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 28px;
+  font-weight: 300;
+  line-height: 1.6;
+  max-width: 680px;
+}
+
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.grid-2-1 { display:grid; grid-template-columns:2fr 1fr; gap:18px; }
+.mt { margin-top:20px; }
+.mt2 { margin-top:40px; }
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 4px rgba(26,36,56,0.05);
+}
+
+.card-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--coral);
+  margin-bottom: 5px;
+}
+
+.card-title {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 3px;
+  letter-spacing: -0.01em;
+}
+
+.card-desc {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-bottom: 18px;
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+/* ── GAP BAR ROW ── */
+.gap-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bg2);
+  cursor: pointer;
+  transition: background 0.12s;
+  border-radius: 4px;
+}
+.gap-row:last-child { border-bottom: none; }
+.gap-row:hover { background: var(--bg); }
+
+.gap-cat {
+  font-family: var(--cond);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--navy2);
+  width: 190px;
+  flex-shrink: 0;
+  letter-spacing: 0.01em;
+}
+
+.gap-track {
+  flex: 1;
+  height: 9px;
+  background: var(--bg2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.gap-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.9s cubic-bezier(0.16,1,0.3,1);
+}
+
+.gap-pct {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  width: 42px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.gap-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  width: 68px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.badge-urgent  { background: #fce8e1; color: var(--urgent-c); }
+.badge-healthy { background: #d0f0ed; color: var(--healthy-c); }
+.badge-monitor { background: #fef3c0; color: var(--monitor-c); }
+.badge-low     { background: var(--bg2); color: var(--muted); }
+
+/* ── PRIORITY MATRIX ── */
+.matrix {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
+  height: 320px;
+}
+
+.quadrant {
+  border-radius: 8px;
+  padding: 14px 16px;
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+}
+
+.quadrant.urgent  { background:#fce8e1; border-color:#f9b89a; }
+.quadrant.healthy { background:#d0f0ed; border-color:#7dd3ca; }
+.quadrant.monitor { background:#fef3c0; border-color:#fcd34d; }
+.quadrant.low     { background:var(--bg2); border-color:var(--border); }
+
+.q-label {
+  font-family: var(--cond);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.quadrant.urgent  .q-label { color: var(--urgent-c); }
+.quadrant.healthy .q-label { color: var(--healthy-c); }
+.quadrant.monitor .q-label { color: var(--amber); }
+.quadrant.low     .q-label { color: var(--muted); }
+
+.q-desc {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  font-weight: 300;
+  line-height: 1.4;
+}
+
+.q-items { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+
+.q-item {
+  font-family: var(--cond);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--navy2);
+  background: rgba(255,255,255,0.6);
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.q-item-stat {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* ── PASS vs GAP SCATTER TABLE ── */
+.scatter-table { width:100%; border-collapse:collapse; }
+.scatter-table th {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1.5px solid var(--border);
+  background: var(--surface2);
+  white-space: nowrap;
+}
+.scatter-table th:not(:first-child) { text-align: center; }
+.scatter-table td {
+  padding: 9px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--bg2);
+  vertical-align: middle;
+}
+.scatter-table td:not(:first-child) {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.scatter-table tbody tr:hover td { background: var(--surface2); }
+
+.dual-bar {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+
+.dbar {
+  height: 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── SUBTOPIC PANELS ── */
+.subtopic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.st-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 4px rgba(26,36,56,0.04);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.st-card:hover {
+  box-shadow: 0 4px 16px rgba(26,36,56,0.1);
+  border-color: var(--border2);
+  transform: translateY(-1px);
+}
+
+.st-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.st-cat-name {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.3;
+}
+
+.st-cat-total {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.st-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.st-label {
+  font-family: var(--cond);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--navy2);
+  width: 145px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.st-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.st-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+}
+
+.st-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  width: 20px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── GAP SPOTLIGHT ── */
+.spotlight-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sp-cat-name {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.sp-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.sp-stats { display: flex; gap: 24px; }
+.sp-stat-val { font-family: var(--mono); font-size: 22px; font-weight: 600; line-height: 1; }
+.sp-stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+
+/* ── KPI STRIP ── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 2px 0 0 2px;
+}
+
+.kpi.urgent::before  { background: var(--urgent-c); }
+.kpi.healthy::before { background: var(--healthy-c); }
+.kpi.monitor::before { background: var(--amber); }
+.kpi.low::before     { background: var(--dim); }
+
+.kpi-val {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.kpi.urgent  .kpi-val { color: var(--urgent-c); }
+.kpi.healthy .kpi-val { color: var(--healthy-c); }
+.kpi.monitor .kpi-val { color: var(--amber); }
+.kpi.low     .kpi-val { color: var(--muted); }
+
+.kpi-label { font-family: var(--cond); font-size: 12px; font-weight: 600; color: var(--navy2); margin-bottom: 3px; letter-spacing: 0.03em; }
+.kpi-sub { font-size: 11px; color: var(--muted); font-weight: 300; line-height: 1.4; }
+
+/* LEGEND */
+.leg { display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; }
+.leg-i { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); font-family:var(--mono); }
+.leg-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width:5px; background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+@keyframes slideIn {
+  from { opacity:0; transform:translateY(12px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.card, .kpi, .st-card { animation: slideIn 0.35s ease both; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="hdr-eyebrow">Scaler Academy · DSML · Curriculum Intelligence</div>
+    <h1>Curriculum <span>Gap</span> &<br>Sub-Topic Frequency</h1>
+    <div class="header-desc">Where learners are failing due to insufficient preparation, and which sub-topics within each AI/ML/DS domain are being tested most.</div>
+  </div>
+  <div class="hdr-stats">
+    <div class="hstat"><div class="hstat-val" style="color:var(--coral);">4</div><div class="hstat-lbl">Urgent</div></div>
+    <div class="hstat"><div class="hstat-val" style="color:#5ac8c0;">2</div><div class="hstat-lbl">Healthy</div></div>
+    <div class="hstat"><div class="hstat-val" style="color:#f0b429;">1</div><div class="hstat-lbl">Monitor</div></div>
+    <div class="hstat"><div class="hstat-val" style="color:#8898b8;">5</div><div class="hstat-lbl">Low Pri</div></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="switchTab('gaps',this)">Curriculum Gap Rate</button>
+  <button class="nav-btn" onclick="switchTab('matrix',this)">Priority Matrix</button>
+  <button class="nav-btn" onclick="switchTab('subtopics',this)">Sub-Topic Frequency</button>
+  <button class="nav-btn" onclick="switchTab('combined',this)">Gap × Sub-Topic</button>
+</nav>
+
+<!-- ══════════ TAB 1: GAP RATES ══════════ -->
+<div id="tab-gaps" class="tab-section active">
+<div class="page">
+
+  <div class="sec-eyebrow">01 — Curriculum Gap Rate</div>
+  <div class="sec-title">Where Prep Is Failing</div>
+  <div class="sec-desc">Gap Rate = % of rejections in that category caused by "Preparation Issue". Higher = more direct curriculum gap signal.</div>
+
+  <div class="kpi-row">
+    <div class="kpi urgent">
+      <div class="kpi-val">52.6%</div>
+      <div class="kpi-label">ML: Supervised</div>
+      <div class="kpi-sub">20 of 38 rejections were prep failures</div>
+    </div>
+    <div class="kpi urgent">
+      <div class="kpi-val">50.0%</div>
+      <div class="kpi-label">Neural Networks</div>
+      <div class="kpi-sub">6 of 12 rejections were prep failures</div>
+    </div>
+    <div class="kpi urgent">
+      <div class="kpi-val">45.5%</div>
+      <div class="kpi-label">NLP</div>
+      <div class="kpi-sub">5 of 11 rejections were prep failures</div>
+    </div>
+    <div class="kpi urgent">
+      <div class="kpi-val">36.1%</div>
+      <div class="kpi-label">ML: Fundamentals</div>
+      <div class="kpi-sub">13 of 36 rejections were prep failures</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-tag">Gap Rate Ranking</div>
+      <div class="card-title">All 12 Categories — Sorted by Gap Rate</div>
+      <div class="card-desc">Click any row to spotlight that category's sub-topics</div>
+      <div id="gapBarList"></div>
+      <div class="leg">
+        <div class="leg-i"><div class="leg-dot" style="background:var(--urgent-c);"></div>Urgent (> median)</div>
+        <div class="leg-i"><div class="leg-dot" style="background:var(--amber);"></div>Monitor</div>
+        <div class="leg-i"><div class="leg-dot" style="background:var(--healthy-c);"></div>Healthy / Low</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-tag">Gap Rate vs Pass Rate</div>
+      <div class="card-title">Prep Failure Rate vs Interview Success Rate</div>
+      <div class="card-desc">High gap + low pass = critical fix needed · High gap + high pass = learners are good but could be better</div>
+      <div style="height:320px; position:relative;">
+        <canvas id="gapPassChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full stats table -->
+  <div class="card mt">
+    <div class="card-tag">Complete Data</div>
+    <div class="card-title">All Metrics per Category</div>
+    <div class="card-desc">Total questions · Cleared · Offered · Rejected · Prep issues · Gap rate · Pass rate</div>
+    <div style="overflow-x:auto;">
+      <table class="scatter-table" id="fullStatsTable"></table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════ TAB 2: PRIORITY MATRIX ══════════ -->
+<div id="tab-matrix" class="tab-section">
+<div class="page">
+
+  <div class="sec-eyebrow">02 — Priority Matrix</div>
+  <div class="sec-title">2×2 Curriculum Action Grid</div>
+  <div class="sec-desc">Each category placed by Volume (question count) vs Gap Rate (prep failure %). Median thresholds used as dividers: vol = 16, gap = 33.3%</div>
+
+  <div class="grid-2-1">
+    <div class="card">
+      <div class="card-tag">Action Quadrants</div>
+      <div class="card-title">Volume × Gap Rate — Priority Grid</div>
+      <div class="card-desc">Top-left = Urgent fix. Top-right = Healthy. Bottom-left = Monitor. Bottom-right = Low priority.</div>
+      <div style="height:360px; position:relative;">
+        <canvas id="matrixScatter"></canvas>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div class="card" style="flex:1;">
+        <div class="card-tag">Legend</div>
+        <div class="card-title" style="font-size:13px;">Quadrant Definitions</div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <div style="width:10px;height:10px;border-radius:2px;background:var(--urgent-c);flex-shrink:0;margin-top:3px;"></div>
+            <div><div style="font-size:12px;font-weight:600;color:var(--navy);font-family:var(--cond);letter-spacing:0.04em;">URGENT</div><div style="font-size:11px;color:var(--muted);margin-top:1px;line-height:1.4;">High volume + high gap rate. Many learners, many prep failures. Fix curriculum now.</div></div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <div style="width:10px;height:10px;border-radius:2px;background:var(--healthy-c);flex-shrink:0;margin-top:3px;"></div>
+            <div><div style="font-size:12px;font-weight:600;color:var(--navy);font-family:var(--cond);letter-spacing:0.04em;">HEALTHY</div><div style="font-size:11px;color:var(--muted);margin-top:1px;line-height:1.4;">High volume, low gap rate. Widely tested and learners are well prepared.</div></div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <div style="width:10px;height:10px;border-radius:2px;background:var(--amber);flex-shrink:0;margin-top:3px;"></div>
+            <div><div style="font-size:12px;font-weight:600;color:var(--navy);font-family:var(--cond);letter-spacing:0.04em;">MONITOR</div><div style="font-size:11px;color:var(--muted);margin-top:1px;line-height:1.4;">Low volume, high gap rate. Rare but failing badly when tested. Watch closely.</div></div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <div style="width:10px;height:10px;border-radius:2px;background:var(--dim);flex-shrink:0;margin-top:3px;"></div>
+            <div><div style="font-size:12px;font-weight:600;color:var(--navy);font-family:var(--cond);letter-spacing:0.04em;">LOW PRIORITY</div><div style="font-size:11px;color:var(--muted);margin-top:1px;line-height:1.4;">Low volume, low gap rate. Not a current pain point.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="flex:0;">
+        <div class="card-tag">Thresholds</div>
+        <div style="display:flex;gap:24px;margin-top:8px;">
+          <div>
+            <div style="font-family:var(--mono);font-size:20px;font-weight:600;color:var(--navy);">16</div>
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Volume median</div>
+          </div>
+          <div>
+            <div style="font-family:var(--mono);font-size:20px;font-weight:600;color:var(--navy);">33.3%</div>
+            <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Gap rate median</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- matrix quadrants detail -->
+  <div class="card mt2">
+    <div class="card-tag">Grid Detail</div>
+    <div class="card-title">All Categories Placed in Their Quadrant</div>
+    <div class="card-desc" style="margin-bottom:20px;">With gap rate and total question count</div>
+    <div class="matrix" id="matrixDetail"></div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════ TAB 3: SUBTOPICS ══════════ -->
+<div id="tab-subtopics" class="tab-section">
+<div class="page">
+
+  <div class="sec-eyebrow">03 — Sub-Topic Frequency</div>
+  <div class="sec-title">What's Being Asked Within Each Category</div>
+  <div class="sec-desc">Frequency of specific sub-topics across all 12 AI/ML/DS categories. RAG dominates Gen AI. Linear Regression leads Supervised ML. Statistics anchors Maths for ML.</div>
+
+  <div class="subtopic-grid" id="subtopicGrid"></div>
+
+</div>
+</div>
+
+<!-- ══════════ TAB 4: COMBINED ══════════ -->
+<div id="tab-combined" class="tab-section">
+<div class="page">
+
+  <div class="sec-eyebrow">04 — Gap × Sub-Topic</div>
+  <div class="sec-title">Category Deep Dive</div>
+  <div class="sec-desc">Select a category to see its gap rate context and sub-topic breakdown side by side.</div>
+
+  <!-- Category selector -->
+  <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:28px;" id="catSelector"></div>
+
+  <!-- Spotlight panel -->
+  <div id="spotlightPanel">
+    <div class="grid-2">
+      <div class="card" id="sp-left">
+        <div class="card-tag">Gap Analysis</div>
+        <div class="card-title" id="sp-cat-name">Select a category above</div>
+        <div id="sp-stats" style="display:flex;gap:24px;margin:14px 0;padding:14px 0;border-top:1px solid var(--bg2);border-bottom:1px solid var(--bg2);"></div>
+        <div id="sp-context" style="font-size:12px;color:var(--muted);line-height:1.6;font-weight:300;"></div>
+      </div>
+      <div class="card">
+        <div class="card-tag">Sub-Topic Breakdown</div>
+        <div class="card-title" id="sp-subtopic-title">—</div>
+        <div class="card-desc">Frequency of specific topics within this category</div>
+        <div style="height:240px; position:relative;">
+          <canvas id="spSubtopicChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card mt">
+      <div class="card-tag">Gap Rate in Context</div>
+      <div class="card-title">Where this category sits relative to others</div>
+      <div style="height:180px; position:relative; margin-top:12px;">
+        <canvas id="spContextChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ══════════════════ DATA ══════════════════
+const D = {
+  categories: ["Generative AI & LLMs","Fine-Tuning LLMs","Agentic AI","ML: Fundamentals","ML: Supervised","ML: Advanced Supervised","ML: Unsupervised & RecSys","Neural Networks","NLP","Computer Vision","MLOps","Maths for ML"],
+  cat_stats: {
+    "Generative AI & LLMs":    {total:143,rejected:86,cleared:48,offered:9,  prep_issue:20,gap_rate:23.3,pass_rate:39.9,priority:"healthy"},
+    "Fine-Tuning LLMs":        {total:11, rejected:9, cleared:2, offered:0,  prep_issue:1, gap_rate:11.1,pass_rate:18.2,priority:"low"},
+    "Agentic AI":              {total:13, rejected:6, cleared:3, offered:4,  prep_issue:1, gap_rate:16.7,pass_rate:53.8,priority:"low"},
+    "ML: Fundamentals":        {total:57, rejected:36,cleared:15,offered:6,  prep_issue:13,gap_rate:36.1,pass_rate:36.8,priority:"urgent"},
+    "ML: Supervised":          {total:53, rejected:38,cleared:14,offered:1,  prep_issue:20,gap_rate:52.6,pass_rate:28.3,priority:"urgent"},
+    "ML: Advanced Supervised": {total:15, rejected:9, cleared:5, offered:1,  prep_issue:3, gap_rate:33.3,pass_rate:40.0,priority:"low"},
+    "ML: Unsupervised & RecSys":{total:7, rejected:3, cleared:3, offered:1,  prep_issue:2, gap_rate:66.7,pass_rate:57.1,priority:"monitor"},
+    "Neural Networks":         {total:17, rejected:12,cleared:4, offered:1,  prep_issue:6, gap_rate:50.0,pass_rate:29.4,priority:"urgent"},
+    "NLP":                     {total:26, rejected:11,cleared:15,offered:0,  prep_issue:5, gap_rate:45.5,pass_rate:57.7,priority:"urgent"},
+    "Computer Vision":         {total:3,  rejected:3, cleared:0, offered:0,  prep_issue:1, gap_rate:33.3,pass_rate:0.0, priority:"low"},
+    "MLOps":                   {total:18, rejected:13,cleared:5, offered:0,  prep_issue:0, gap_rate:0.0, pass_rate:27.8,priority:"healthy"},
+    "Maths for ML":            {total:15, rejected:15,cleared:0, offered:0,  prep_issue:3, gap_rate:20.0,pass_rate:0.0, priority:"low"},
+  },
+  subtopics: {
+    "Generative AI & LLMs":    {"RAG":61,"LLM":24,"Transformer":3,"GenAI":3,"LLM, Transformer":1},
+    "Fine-Tuning LLMs":        {"Fine Tuning LLMs":10,"Fine Tuning LLMs, RAG":1},
+    "Agentic AI":              {"Agentic AI":12,"MCP Server":1},
+    "ML: Fundamentals":        {"Model Evaluation":11,"EDA":8,"Introduction to ML":9,"Supervised + Unsupervised":5,"Time Series Analysis":2,"Activation Functions":2,"Hyperparameter tuning":2},
+    "ML: Supervised":          {"Linear Regression":11,"KNN":5,"Model Evaluation":4,"Classification Algorithm":3,"Supervised Learning":3,"Logistic Regression":2,"Feature Engineering":1},
+    "ML: Advanced Supervised": {"Ensemble Techniques":5,"Bagging & Boosting":3,"Random Forest, DTree":2,"XgBoost":1,"Dimensionality Reduction":1,"Logistic Regression":1},
+    "ML: Unsupervised & RecSys":{"Clustering Algorithm":2,"Dimensionality Reduction":1,"Unsupervised Learning":1},
+    "Neural Networks":         {"Activation Functions":4,"CNN":4,"Artificial Neural Networks":2,"Transformer":2},
+    "NLP":                     {"NLP Pipeline":5,"NER":3,"Vectorization Techniques":1,"Clustering Algorithm":1},
+    "Computer Vision":         {"Computer Vision":2,"Segmentation Algorithms":1},
+    "MLOps":                   {"ML Pipeline":2,"AWS":2,"Docker":1,"CI/CD":1,"Git":1,"FastAPI":1,"Model Deployment":1,"DevOps":1},
+    "Maths for ML":            {"Statistics":8,"Statistics & Probability":3,"Probability":2,"Hypothesis Testing":2},
+  }
+};
+
+// ══════════════════ COLORS ══════════════════
+const COL = {
+  urgent: '#e8522a', healthy: '#0e9488', monitor: '#b45309', low: '#9aa4b8',
+  cats: ['#e8522a','#1a5fbf','#0e9488','#b45309','#6d28d9','#be185d',
+         '#075985','#4d7c0f','#92400e','#1e3a5f','#064e3b','#831843'],
+};
+
+function gapColor(rate, priority) {
+  if (priority === 'urgent')  return COL.urgent;
+  if (priority === 'monitor') return COL.monitor;
+  if (priority === 'healthy') return COL.healthy;
+  return '#9aa4b8';
+}
+
+function priorityBadge(p) {
+  const map = {urgent:'badge-urgent',healthy:'badge-healthy',monitor:'badge-monitor',low:'badge-low'};
+  const labels = {urgent:'Urgent',healthy:'Healthy',monitor:'Monitor',low:'Low'};
+  return `<span class="gap-badge ${map[p]}">${labels[p]}</span>`;
+}
+
+// ══════════════════ TAB SWITCH ══════════════════
+function switchTab(id, btn) {
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+// ══════════════════ GAP BARS ══════════════════
+function buildGapBars() {
+  const el = document.getElementById('gapBarList');
+  const sorted = Object.entries(D.cat_stats).sort((a,b)=>b[1].gap_rate-a[1].gap_rate);
+  const max = sorted[0][1].gap_rate;
+
+  sorted.forEach(([cat, s]) => {
+    const color = gapColor(s.gap_rate, s.priority);
+    const row = document.createElement('div');
+    row.className = 'gap-row';
+    row.onclick = () => { switchTab('combined', document.querySelector('.nav-btn:nth-child(4)')); spotlightCat(cat); };
+    row.innerHTML = `
+      <div class="gap-cat" title="${cat}">${cat}</div>
+      <div class="gap-track"><div class="gap-fill" style="width:0%;background:${color}" data-w="${(s.gap_rate/max*100).toFixed(1)}%"></div></div>
+      <div class="gap-pct" style="color:${color}">${s.gap_rate}%</div>
+      ${priorityBadge(s.priority)}
+    `;
+    el.appendChild(row);
+  });
+
+  setTimeout(() => {
+    el.querySelectorAll('.gap-fill').forEach(f => f.style.width = f.dataset.w);
+  }, 80);
+}
+
+// ══════════════════ GAP vs PASS CHART ══════════════════
+function buildGapPassChart() {
+  const ctx = document.getElementById('gapPassChart').getContext('2d');
+  const cats = Object.keys(D.cat_stats);
+  const gapData = cats.map(c => D.cat_stats[c].gap_rate);
+  const passData = cats.map(c => D.cat_stats[c].pass_rate);
+  const colors = cats.map((c,i) => COL.cats[i%COL.cats.length]);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: cats.map(c => c.length > 18 ? c.slice(0,18)+'…' : c),
+      datasets: [
+        { label:'Gap Rate %', data:gapData, backgroundColor: cats.map(c=>gapColor(c,D.cat_stats[c].priority)+'cc'), borderRadius:3, borderSkipped:false },
+        { label:'Pass Rate %', data:passData, backgroundColor:'rgba(26,95,191,0.25)', borderRadius:3, borderSkipped:false, borderColor:'rgba(26,95,191,0.6)', borderWidth:1 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: { labels:{ color:'#6b7a94', font:{size:11}, boxWidth:10 } },
+        tooltip: { backgroundColor:'#1a2438', titleColor:'#fff', bodyColor:'#8898b8',
+                   callbacks:{ label: c=>`  ${c.dataset.label}: ${c.raw}%` } }
+      },
+      scales: {
+        x: { grid:{color:'rgba(208,213,224,0.5)'}, ticks:{color:'#6b7a94',font:{size:9},maxRotation:40,minRotation:30} },
+        y: { grid:{color:'rgba(208,213,224,0.5)'}, ticks:{color:'#6b7a94',font:{size:10}}, max:100,
+             title:{display:true,text:'%',color:'#9aa4b8',font:{size:10}} }
+      }
+    }
+  });
+}
+
+// ══════════════════ FULL STATS TABLE ══════════════════
+function buildFullTable() {
+  const tbl = document.getElementById('fullStatsTable');
+  const sorted = Object.entries(D.cat_stats).sort((a,b)=>b[1].gap_rate-a[1].gap_rate);
+  tbl.innerHTML = `<thead><tr>
+    <th>Category</th><th>Total</th><th>Cleared</th><th>Offered</th><th>Rejected</th>
+    <th>Prep Issues</th><th>Gap Rate</th><th>Pass Rate</th><th>Priority</th>
+  </tr></thead><tbody>` + sorted.map(([cat, s]) => {
+    const gc = gapColor(s.gap_rate, s.priority);
+    return `<tr>
+      <td style="font-weight:600;font-size:12px;color:var(--navy);">${cat}</td>
+      <td style="font-weight:700;">${s.total}</td>
+      <td style="color:var(--healthy-c);">${s.cleared}</td>
+      <td style="color:var(--blue);">${s.offered}</td>
+      <td style="color:var(--urgent-c);">${s.rejected}</td>
+      <td style="font-weight:700;color:${gc};">${s.prep_issue}</td>
+      <td><span style="font-family:var(--mono);font-size:12px;font-weight:700;color:${gc};">${s.gap_rate}%</span></td>
+      <td style="color:${s.pass_rate>=50?'var(--healthy-c)':s.pass_rate>=30?'var(--amber)':'var(--urgent-c)'};">${s.pass_rate}%</td>
+      <td>${priorityBadge(s.priority)}</td>
+    </tr>`;
+  }).join('') + '</tbody>';
+}
+
+// ══════════════════ MATRIX SCATTER ══════════════════
+function buildMatrixScatter() {
+  const ctx = document.getElementById('matrixScatter').getContext('2d');
+  const VOL_MED = 16, GAP_MED = 33.3;
+
+  const points = Object.entries(D.cat_stats).map(([cat, s], i) => ({
+    x: s.total,
+    y: s.gap_rate,
+    label: cat,
+    color: COL.cats[i % COL.cats.length],
+    r: Math.max(6, Math.sqrt(s.prep_issue) * 5),
+    priority: s.priority
+  }));
+
+  new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: points.map(p => ({
+        label: p.label,
+        data: [{ x:p.x, y:p.y, r:p.r }],
+        backgroundColor: gapColor(p.y, p.priority) + 'aa',
+        borderColor: gapColor(p.y, p.priority),
+        borderWidth: 1.5
+      }))
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'#1a2438', titleColor:'#fff', bodyColor:'#8898b8',
+                  callbacks:{
+                    title: c => c[0].dataset.label,
+                    label: c => [`  Volume: ${c.raw.x}`, `  Gap Rate: ${c.raw.y}%`]
+                  }}
+      },
+      scales: {
+        x: {
+          grid:{color:'rgba(208,213,224,0.5)'},
+          ticks:{color:'#6b7a94',font:{size:10}},
+          title:{display:true,text:'Question Volume →',color:'#9aa4b8',font:{size:10}},
+        },
+        y: {
+          grid:{color:'rgba(208,213,224,0.5)'},
+          ticks:{color:'#6b7a94',font:{size:10}},
+          title:{display:true,text:'← Gap Rate (%) →',color:'#9aa4b8',font:{size:10}},
+          max: 80
+        }
+      }
+    },
+    plugins: [{
+      afterDraw(chart) {
+        const {ctx, scales:{x,y}} = chart;
+        const xMed = x.getPixelForValue(VOL_MED);
+        const yMed = y.getPixelForValue(GAP_MED);
+
+        ctx.save();
+        ctx.setLineDash([4,4]);
+        ctx.strokeStyle = 'rgba(26,36,56,0.2)';
+        ctx.lineWidth = 1;
+
+        ctx.beginPath(); ctx.moveTo(xMed,y.top); ctx.lineTo(xMed,y.bottom); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x.left,yMed); ctx.lineTo(x.right,yMed); ctx.stroke();
+
+        // Labels on chart
+        ctx.fillStyle = 'rgba(26,36,56,0.5)';
+        ctx.font = '9px JetBrains Mono';
+        ctx.fillText('URGENT', x.left+6, y.top+14);
+        ctx.fillText('HEALTHY', xMed+6, y.top+14);
+        ctx.fillText('MONITOR', x.left+6, yMed-6);
+        ctx.fillText('LOW PRI', xMed+6, yMed-6);
+
+        // Draw cat labels
+        const meta = chart.getDatasetMeta;
+        chart.data.datasets.forEach((ds, i) => {
+          const m = chart.getDatasetMeta(i);
+          if (m.data[0]) {
+            const pt = m.data[0];
+            ctx.fillStyle = '#1a2438';
+            ctx.font = '8px Barlow Condensed';
+            const label = ds.label.length > 14 ? ds.label.slice(0,14)+'…' : ds.label;
+            ctx.fillText(label, pt.x + pt.options.radius + 3, pt.y + 3);
+          }
+        });
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// ══════════════════ MATRIX DETAIL ══════════════════
+function buildMatrixDetail() {
+  const el = document.getElementById('matrixDetail');
+  const groups = {urgent:[], healthy:[], monitor:[], low:[]};
+  Object.entries(D.cat_stats).forEach(([cat, s]) => {
+    groups[s.priority].push({cat, s});
+  });
+
+  const quadrants = [
+    {key:'urgent',  label:'🚨 Urgent',  desc:'High volume · High gap'},
+    {key:'healthy', label:'✅ Healthy', desc:'High volume · Low gap'},
+    {key:'monitor', label:'⚠️ Monitor', desc:'Low volume · High gap'},
+    {key:'low',     label:'📌 Low',     desc:'Low volume · Low gap'},
+  ];
+
+  quadrants.forEach(q => {
+    const div = document.createElement('div');
+    div.className = `quadrant ${q.key}`;
+    const items = groups[q.key].map(({cat, s}) =>
+      `<div class="q-item">
+        <span>${cat.length > 20 ? cat.slice(0,20)+'…' : cat}</span>
+        <span class="q-item-stat">${s.total}q · ${s.gap_rate}%</span>
+      </div>`).join('');
+    div.innerHTML = `<div class="q-label">${q.label}</div><div class="q-desc">${q.desc}</div><div class="q-items">${items || '<div style="font-size:11px;color:var(--muted);">None</div>'}</div>`;
+    el.appendChild(div);
+  });
+}
+
+// ══════════════════ SUBTOPIC GRID ══════════════════
+const ST_COLORS = ['#e8522a','#1a5fbf','#0e9488','#b45309','#6d28d9','#be185d',
+                   '#075985','#4d7c0f','#92400e','#1e3a5f','#064e3b','#831843'];
+
+function buildSubtopicGrid() {
+  const grid = document.getElementById('subtopicGrid');
+
+  D.categories.forEach((cat, ci) => {
+    const s = D.cat_stats[cat];
+    const topics = D.subtopics[cat] || {};
+    const topicEntries = Object.entries(topics).sort((a,b)=>b[1]-a[1]);
+    if (!topicEntries.length) return;
+
+    const color = ST_COLORS[ci % ST_COLORS.length];
+    const max = topicEntries[0][1];
+
+    const card = document.createElement('div');
+    card.className = 'st-card';
+    card.onclick = () => { switchTab('combined', document.querySelector('.nav-btn:nth-child(4)')); spotlightCat(cat); };
+
+    const rows = topicEntries.map(([topic, count]) => `
+      <div class="st-row">
+        <div class="st-label" title="${topic}">${topic}</div>
+        <div class="st-track"><div class="st-fill" style="width:0%;background:${color}" data-w="${(count/max*100).toFixed(0)}%"></div></div>
+        <div class="st-count">${count}</div>
+      </div>`).join('');
+
+    card.innerHTML = `
+      <div class="st-card-header">
+        <div>
+          <div class="st-cat-name">${cat}</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:3px;">${s.gap_rate}% gap · ${s.total}q</div>
+        </div>
+        <div class="st-cat-total" style="color:${color};">${s.total}</div>
+      </div>
+      ${rows}`;
+
+    grid.appendChild(card);
+  });
+
+  setTimeout(() => {
+    document.querySelectorAll('.st-fill').forEach(el => el.style.width = el.dataset.w);
+  }, 80);
+}
+
+// ══════════════════ CATEGORY SELECTOR ══════════════════
+let spSubChart = null, spCtxChart = null;
+
+function buildCatSelector() {
+  const el = document.getElementById('catSelector');
+  D.categories.forEach((cat, i) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `font-family:var(--cond);font-size:12px;font-weight:600;letter-spacing:0.04em;padding:7px 14px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--navy2);cursor:pointer;transition:all 0.15s;`;
+    btn.textContent = cat;
+    btn.dataset.cat = cat;
+    btn.onmouseenter = () => { if(!btn.classList.contains('sel')) { btn.style.borderColor='var(--border2)'; btn.style.color='var(--navy)'; }};
+    btn.onmouseleave = () => { if(!btn.classList.contains('sel')) { btn.style.borderColor='var(--border)'; btn.style.color='var(--navy2)'; }};
+    btn.onclick = () => spotlightCat(cat, btn);
+    el.appendChild(btn);
+  });
+}
+
+function spotlightCat(cat, btnEl) {
+  // Deselect all
+  document.querySelectorAll('#catSelector button').forEach(b => {
+    b.classList.remove('sel');
+    b.style.background='var(--surface)'; b.style.color='var(--navy2)'; b.style.borderColor='var(--border)';
+  });
+  // Select clicked
+  const btn = btnEl || document.querySelector(`#catSelector button[data-cat="${cat}"]`);
+  if (btn) {
+    btn.classList.add('sel');
+    const ci = D.categories.indexOf(cat);
+    const color = ST_COLORS[ci % ST_COLORS.length];
+    btn.style.background = color; btn.style.color='#fff'; btn.style.borderColor=color;
+  }
+
+  const s = D.cat_stats[cat];
+  const topics = D.subtopics[cat] || {};
+  const ci = D.categories.indexOf(cat);
+  const color = ST_COLORS[ci % ST_COLORS.length];
+
+  // Left panel
+  document.getElementById('sp-cat-name').textContent = cat;
+  const statsEl = document.getElementById('sp-stats');
+  const gc = gapColor(s.gap_rate, s.priority);
+  statsEl.innerHTML = `
+    <div class="sp-stat"><div class="sp-stat-val" style="color:${gc}">${s.gap_rate}%</div><div class="sp-stat-lbl">Gap Rate</div></div>
+    <div class="sp-stat"><div class="sp-stat-val" style="color:var(--blue)">${s.pass_rate}%</div><div class="sp-stat-lbl">Pass Rate</div></div>
+    <div class="sp-stat"><div class="sp-stat-val">${s.total}</div><div class="sp-stat-lbl">Questions</div></div>
+    <div class="sp-stat"><div class="sp-stat-val" style="color:var(--urgent-c)">${s.prep_issue}</div><div class="sp-stat-lbl">Prep Issues</div></div>
+  `;
+
+  const ctxMap = {
+    urgent: `This category is URGENT — high question volume and high prep failure rate. ${s.prep_issue} of ${s.rejected} rejections were preparation failures. Curriculum improvements here will have high impact.`,
+    healthy: `This category is HEALTHY — high volume but learners are generally prepared. Gap rate of ${s.gap_rate}% is below the 33.3% median threshold. Keep monitoring but no urgent fix needed.`,
+    monitor: `This category is in MONITOR status — low volume but a high gap rate (${s.gap_rate}%). When it does appear in interviews, learners are failing due to prep gaps. Watch if volume increases.`,
+    low: `This category is LOW PRIORITY — both volume and gap rate are below medians. Not a current pain point for the placement pipeline.`,
+  };
+  document.getElementById('sp-context').textContent = ctxMap[s.priority] || '';
+
+  // Sub-topic chart
+  document.getElementById('sp-subtopic-title').textContent = `${cat} — Sub-Topics`;
+  const entries = Object.entries(topics).sort((a,b)=>b[1]-a[1]);
+
+  if (spSubChart) spSubChart.destroy();
+  const ctx1 = document.getElementById('spSubtopicChart').getContext('2d');
+  spSubChart = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: entries.map(e=>e[0]),
+      datasets: [{ data: entries.map(e=>e[1]), backgroundColor: color+'cc', borderRadius:4, borderSkipped:false }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins: { legend:{display:false}, tooltip:{ backgroundColor:'#1a2438', titleColor:'#fff', bodyColor:'#8898b8' } },
+      scales: {
+        x:{ grid:{color:'rgba(208,213,224,0.5)'}, ticks:{color:'#6b7a94',font:{size:10}} },
+        y:{ grid:{display:false}, ticks:{color:'#2c3a52',font:{size:10}} }
+      }
+    }
+  });
+
+  // Context chart — gap rate across all cats, highlight selected
+  if (spCtxChart) spCtxChart.destroy();
+  const ctx2 = document.getElementById('spContextChart').getContext('2d');
+  const allCats = Object.entries(D.cat_stats).sort((a,b)=>b[1].gap_rate-a[1].gap_rate);
+  spCtxChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: allCats.map(([c])=>c.length>16?c.slice(0,16)+'…':c),
+      datasets: [{
+        data: allCats.map(([c])=>D.cat_stats[c].gap_rate),
+        backgroundColor: allCats.map(([c])=>c===cat ? color+'ee' : 'rgba(208,213,224,0.7)'),
+        borderRadius:3, borderSkipped:false
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#1a2438', titleColor:'#fff', bodyColor:'#8898b8',
+        callbacks:{title:c=>allCats[c[0].dataIndex][0], label:c=>`  Gap Rate: ${c.raw}%`} } },
+      scales:{
+        x:{grid:{color:'rgba(208,213,224,0.5)'},ticks:{color:'#6b7a94',font:{size:9},maxRotation:35,minRotation:25}},
+        y:{grid:{color:'rgba(208,213,224,0.5)'},ticks:{color:'#6b7a94',font:{size:10}},max:80,
+           title:{display:true,text:'Gap Rate %',color:'#9aa4b8',font:{size:9}}}
+      }
+    }
+  });
+}
+
+// ══════════════════ INIT ══════════════════
+buildGapBars();
+buildGapPassChart();
+buildFullTable();
+buildMatrixScatter();
+buildMatrixDetail();
+buildSubtopicGrid();
+buildCatSelector();
+</script>
+</body>
+</html>
