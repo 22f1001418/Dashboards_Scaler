@@ -1,15 +1,646 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Dashboards</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DSML Placement Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=Epilogue:wght@300;400;500;600&family=Epilogue+Italic:wght@300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #111114;
+      --bg2:     #18181c;
+      --bg3:     #1e1e24;
+      --border:  #2a2a35;
+      --border2: #38384a;
+      --text:    #f0efe8;
+      --text2:   #b8b4a8;
+      --muted:   #6b6760;
+      --gold:    #c9a84c;
+      --gold2:   #e8cb7a;
+      --gold-lt: rgba(201,168,76,0.1);
+      --font:    'Epilogue', sans-serif;
+      --serif:   'Fraunces', serif;
+      --mono:    'DM Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── subtle grid bg ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(17,17,20,0.98) 0%, transparent 100%);
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo::before {
+      content: '';
+      width: 20px; height: 1px;
+      background: var(--gold);
+    }
+
+    .nav-link {
+      font-size: 12px;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      transition: color 0.18s;
+    }
+
+    .nav-link:hover { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 120px 56px 80px;
+      text-align: center;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hero-eyebrow::before,
+    .hero-eyebrow::after {
+      content: '';
+      flex: 1;
+      max-width: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold));
+    }
+
+    .hero-eyebrow::after {
+      background: linear-gradient(270deg, transparent, var(--gold));
+    }
+
+    .hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(44px, 7vw, 88px);
+      font-weight: 300;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: 10px;
+      max-width: 900px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .hero-sub {
+      font-size: 16px;
+      color: var(--text2);
+      font-weight: 300;
+      line-height: 1.7;
+      max-width: 560px;
+      margin: 24px auto 0;
+      letter-spacing: 0.01em;
+    }
+
+    .hero-meta {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      margin-top: 52px;
+    }
+
+    .hmeta {
+      text-align: center;
+    }
+
+    .hmeta-val {
+      font-family: var(--mono);
+      font-size: 32px;
+      font-weight: 500;
+      color: var(--gold2);
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+
+    .hmeta-lbl {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+    }
+
+    .hmeta-divider {
+      width: 1px;
+      height: 40px;
+      background: var(--border);
+    }
+
+    .scroll-hint {
+      margin-top: 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      animation: float 2.5s ease-in-out infinite;
+    }
+
+    .scroll-hint span {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .scroll-arrow {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(180deg, var(--border), transparent);
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); opacity: 0.6; }
+      50% { transform: translateY(6px); opacity: 1; }
+    }
+
+    /* ── DASHBOARDS SECTION ── */
+    .section {
+      position: relative;
+      z-index: 1;
+      padding: 80px 56px 120px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-label::before {
+      content: '';
+      width: 20px; height: 1px;
+      background: var(--gold);
+    }
+
+    .section-title {
+      font-family: var(--serif);
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .section-desc {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 300;
+      margin-bottom: 56px;
+      max-width: 520px;
+      line-height: 1.6;
+    }
+
+    /* ── CARDS GRID ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .dash-card {
+      position: relative;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 36px 32px;
+      text-decoration: none;
+      color: inherit;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+
+    .dash-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--gold-lt), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .dash-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-4px);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,168,76,0.1);
+    }
+
+    .dash-card:hover::before { opacity: 1; }
+
+    /* Accent line at top */
+    .dash-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 36px; right: 36px;
+      height: 1px;
+      transition: all 0.3s;
+      opacity: 0;
+    }
+
+    .dash-card:hover::after { opacity: 1; }
+
+    .card-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-num-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 20px;
+      border: 1px solid;
+    }
+
+    .card-icon {
+      font-size: 32px;
+      margin-bottom: 20px;
+      display: block;
+      filter: grayscale(0.3);
+    }
+
+    .card-title {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text2);
+      font-weight: 300;
+      line-height: 1.65;
+      flex: 1;
+      margin-bottom: 28px;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 24px;
+    }
+
+    .card-tag {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 4px;
+      background: var(--bg3);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .card-cta {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: gap 0.2s;
+    }
+
+    .dash-card:hover .card-cta { gap: 14px; }
+
+    .card-cta-arrow {
+      width: 20px; height: 1px;
+      background: var(--gold);
+      position: relative;
+      transition: width 0.2s;
+    }
+
+    .card-cta-arrow::after {
+      content: '';
+      position: absolute;
+      right: 0; top: -3px;
+      width: 6px; height: 6px;
+      border-top: 1px solid var(--gold);
+      border-right: 1px solid var(--gold);
+      transform: rotate(45deg);
+    }
+
+    .dash-card:hover .card-cta-arrow { width: 28px; }
+
+    .card-stat {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* Card accent colors */
+    .card-1 .card-num-badge { border-color: rgba(56,189,248,0.3); color: #38bdf8; }
+    .card-2 .card-num-badge { border-color: rgba(192,98,42,0.3);  color: #c0622a; }
+    .card-3 .card-num-badge { border-color: rgba(93,184,122,0.3); color: #5db87a; }
+    .card-4 .card-num-badge { border-color: rgba(232,82,42,0.3);  color: #e8522a; }
+
+    .card-1 .card-icon { color: #38bdf8; }
+    .card-2 .card-icon { color: #c0622a; }
+    .card-3 .card-icon { color: #5db87a; }
+    .card-4 .card-icon { color: #e8522a; }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 32px 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-left {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .footer-right {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .footer-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.3); }
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      position: relative;
+      z-index: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 0 56px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .cards { grid-template-columns: 1fr; }
+      nav { padding: 20px 28px; }
+      .hero { padding: 100px 28px 60px; }
+      .section { padding: 60px 28px 80px; }
+      footer { padding: 24px 28px; flex-direction: column; gap: 12px; text-align: center; }
+    }
+  </style>
 </head>
 <body>
-  <h1>Dashboard Links</h1>
-  <ul>
-    <li><a href="Cleared vs Selected.html">Cleared vs Selected</a></li>
-    <li><a href="InDepth-Ques Analysis.html">InDepth Analysis</a></li>
-    <li><a href="Questions-Topic Analysis.html">Topic Analysis</a></li>
-    <li><a href="SubTopic Analysis.html">SubTopic Analysis</a></li>
-  </ul>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">Scaler Academy · DSML</div>
+    <a href="#dashboards" class="nav-link">View Dashboards ↓</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">Placement Intelligence · 2025–26</div>
+    <h1>Every interview.<br><em>Every insight.</em></h1>
+    <p class="hero-sub">A data-driven analysis of 727 interview questions, 115 learners, and the patterns that separate offers from rejections in DSML placements.</p>
+
+    <div class="hero-meta">
+      <div class="hmeta">
+        <div class="hmeta-val">727</div>
+        <div class="hmeta-lbl">Questions</div>
+      </div>
+      <div class="hmeta-divider"></div>
+      <div class="hmeta">
+        <div class="hmeta-val">115</div>
+        <div class="hmeta-lbl">Learners</div>
+      </div>
+      <div class="hmeta-divider"></div>
+      <div class="hmeta">
+        <div class="hmeta-val">45+</div>
+        <div class="hmeta-lbl">Companies</div>
+      </div>
+      <div class="hmeta-divider"></div>
+      <div class="hmeta">
+        <div class="hmeta-val">4</div>
+        <div class="hmeta-lbl">Dashboards</div>
+      </div>
+    </div>
+
+    <div class="scroll-hint">
+      <span>Explore</span>
+      <div class="scroll-arrow"></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- DASHBOARDS -->
+  <section class="section" id="dashboards">
+    <div class="section-label">Dashboards</div>
+    <div class="section-title">Four Lenses on the Data</div>
+    <p class="section-desc">Each dashboard answers a distinct question about what's happening in DSML placements — from topic distribution to individual learner journeys.</p>
+
+    <div class="cards">
+
+      <!-- Card 1 -->
+      <a class="dash-card card-1" href="Questions-Topic Analysis.html">
+        <div class="card-num">
+          <span>01 / 04</span>
+          <span class="card-num-badge">Questions</span>
+        </div>
+        <span class="card-icon">📊</span>
+        <div class="card-title">Topic & Question Analysis</div>
+        <div class="card-desc">A full breakdown of all 727 questions across 23 categories — difficulty levels, question types (coding vs conceptual vs scenario), round patterns, company distribution, and outcome analysis by topic.</div>
+        <div class="card-tags">
+          <span class="card-tag">23 Categories</span>
+          <span class="card-tag">Difficulty</span>
+          <span class="card-tag">Pass Rate</span>
+          <span class="card-tag">Hot Topics</span>
+        </div>
+        <div class="card-footer">
+          <div class="card-cta">Open Dashboard <div class="card-cta-arrow"></div></div>
+          <div class="card-stat">727 questions</div>
+        </div>
+      </a>
+
+      <!-- Card 2 -->
+      <a class="dash-card card-2" href="InDepth-Ques Analysis.html">
+        <div class="card-num">
+          <span>02 / 04</span>
+          <span class="card-num-badge">Roles & Rounds</span>
+        </div>
+        <span class="card-icon">🎯</span>
+        <div class="card-title">Role & Round Analysis</div>
+        <div class="card-desc">How question difficulty, type, and outcomes vary by job role (AI Engineer, Data Scientist, DS Intern…) and interview round (Technical, Assessment, Managerial). Includes pass rates per round level R1 → R4.</div>
+        <div class="card-tags">
+          <span class="card-tag">12 Roles</span>
+          <span class="card-tag">Round Types</span>
+          <span class="card-tag">Outcome Funnel</span>
+          <span class="card-tag">R1 → R4</span>
+        </div>
+        <div class="card-footer">
+          <div class="card-cta">Open Dashboard <div class="card-cta-arrow"></div></div>
+          <div class="card-stat">5 round types</div>
+        </div>
+      </a>
+
+      <!-- Card 3 -->
+      <a class="dash-card card-3" href="Cleared vs Selected.html">
+        <div class="card-num">
+          <span>03 / 04</span>
+          <span class="card-num-badge">Learner Journey</span>
+        </div>
+        <span class="card-icon">🧭</span>
+        <div class="card-title">Cleared vs Offered</div>
+        <div class="card-desc">A learner-level deep dive — who got offers, who cleared rounds without converting, and who was rejected. Uncovers the real reasons: prep gaps, communication failures, domain mismatches, and external factors.</div>
+        <div class="card-tags">
+          <span class="card-tag">115 Learners</span>
+          <span class="card-tag">17 Offered</span>
+          <span class="card-tag">37 Cleared</span>
+          <span class="card-tag">Rejection Reasons</span>
+        </div>
+        <div class="card-footer">
+          <div class="card-cta">Open Dashboard <div class="card-cta-arrow"></div></div>
+          <div class="card-stat">115 learners</div>
+        </div>
+      </a>
+
+      <!-- Card 4 -->
+      <a class="dash-card card-4" href="SubTopic Analysis.html">
+        <div class="card-num">
+          <span>04 / 04</span>
+          <span class="card-num-badge">Curriculum</span>
+        </div>
+        <span class="card-icon">🔬</span>
+        <div class="card-title">Curriculum Gap & Sub-Topics</div>
+        <div class="card-desc">Where learners are failing due to insufficient prep — gap rates per AI/ML/DS category, priority matrix (Urgent / Healthy / Monitor / Low), and sub-topic frequency showing exactly what gets asked within each domain.</div>
+        <div class="card-tags">
+          <span class="card-tag">Gap Rate</span>
+          <span class="card-tag">Priority Matrix</span>
+          <span class="card-tag">Sub-Topics</span>
+          <span class="card-tag">12 Domains</span>
+        </div>
+        <div class="card-footer">
+          <div class="card-cta">Open Dashboard <div class="card-cta-arrow"></div></div>
+          <div class="card-stat">12 categories</div>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-left">Scaler Academy · DSML Placement Ops · 2025–26</div>
+    <div class="footer-right">
+      <div class="footer-dot"></div>
+      Live on GitHub Pages
+    </div>
+  </footer>
+
 </body>
 </html>
